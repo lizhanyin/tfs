@@ -1,15 +1,89 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
     <id>com.github.lizhanyin.tfs</id>
-    <name>tfs</name>
-    <vendor>lizhanyin</vendor>
+    <name>TFS 2015 Integration</name>
+    <vendor email="lizhanyin@github.com" url="https://github.com/lizhanyin">lizhanyin</vendor>
+
+    <description><![CDATA[
+    <p>Team Foundation Server 2015 integration for IntelliJ IDEA.</p>
+    <p>Features:</p>
+    <ul>
+        <li>Basic operations: checkout, checkin, get latest, rollback</li>
+        <li>Branch management: create, merge, delete branches</li>
+        <li>Change tracking: history, diff, annotate/blame</li>
+    </ul>
+    ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
 
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.lizhanyin.tfs.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
-        <postStartupActivity implementation="com.github.lizhanyin.tfs.startup.MyProjectActivity" />
+        <!-- VCS 核心注册 -->
+        <vcs name="TFS"
+             vcsClass="com.github.lizhanyin.tfs.vcs.TfsVcs"
+             displayName="Team Foundation Server"/>
+
+        <!-- 项目服务 -->
+        <projectService serviceImplementation="com.github.lizhanyin.tfs.services.TfsService"/>
+        <projectService serviceImplementation="com.github.lizhanyin.tfs.settings.TfsSettings"/>
+
+        <!-- 启动活动 -->
+        <postStartupActivity implementation="com.github.lizhanyin.tfs.startup.TfsStartupActivity"/>
+
+        <!-- 设置界面 -->
+        <projectConfigurable parentId="project.propVCSSupport"
+                             instance="com.github.lizhanyin.tfs.settings.TfsSettingsConfigurable"
+                             id="tfs.settings"
+                             displayName="TFS"/>
+
+        <!-- 工具窗口 -->
+        <toolWindow id="TFS"
+                    factoryClass="com.github.lizhanyin.tfs.toolWindow.TfsToolWindowFactory"
+                    anchor="bottom"/>
+
+        <!-- 通知组 -->
+        <notificationGroup id="TFS Notifications" displayType="BALLOON"/>
     </extensions>
+
+    <!-- 操作 -->
+    <actions>
+        <group id="TFSGroup" text="TFS" popup="true">
+            <add-to-group group-id="VcsGroups" anchor="after" relative-to-action="Vcs.Operations"/>
+
+            <action id="TFS.GetLatest"
+                    class="com.github.lizhanyin.tfs.actions.GetLatestAction"
+                    text="Get Latest Version"
+                    description="Get the latest version of files from TFS"/>
+
+            <action id="TFS.Checkin"
+                    class="com.github.lizhanyin.tfs.actions.CheckinAction"
+                    text="Check In..."
+                    description="Check in pending changes"/>
+
+            <action id="TFS.Undo"
+                    class="com.github.lizhanyin.tfs.actions.UndoAction"
+                    text="Undo Pending Changes..."
+                    description="Undo pending changes"/>
+
+            <separator/>
+
+            <action id="TFS.History"
+                    class="com.github.lizhanyin.tfs.actions.HistoryAction"
+                    text="View History"
+                    description="View file history"/>
+
+            <action id="TFS.Annotate"
+                    class="com.github.lizhanyin.tfs.actions.AnnotateAction"
+                    text="Annotate"
+                    description="Show line-by-line version information"/>
+
+            <separator/>
+
+            <action id="TFS.Refresh"
+                    class="com.github.lizhanyin.tfs.actions.RefreshAction"
+                    text="Refresh Status"
+                    description="Refresh TFS status"/>
+        </group>
+    </actions>
 </idea-plugin>
