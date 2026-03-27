@@ -3,7 +3,7 @@
 
 package com.microsoft.tfs.sdk.samples.teamexplorer;
 
-import com.microsoft.tfs.client.common.ui.teamexplorer.items.TeamExplorerBaseNavigationItem;
+import com.github.lizhanyin.tfs.client.ui.ui.teamexplorer.items.TeamExplorerBaseNavigationItem;
 
 public class TeamExplorerSampleNavigationItem extends TeamExplorerBaseNavigationItem {
 

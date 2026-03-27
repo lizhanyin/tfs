@@ -3,7 +3,7 @@
 
 package com.microsoft.tfs.sdk.samples.teamexplorer;
 
-import com.microsoft.tfs.client.common.ui.views.TeamExplorerDockableView;
+import com.github.lizhanyin.tfs.client.ui.ui.views.TeamExplorerDockableView;
 
 /**
  * This is a sample Team Explorer dockable view for the sample page

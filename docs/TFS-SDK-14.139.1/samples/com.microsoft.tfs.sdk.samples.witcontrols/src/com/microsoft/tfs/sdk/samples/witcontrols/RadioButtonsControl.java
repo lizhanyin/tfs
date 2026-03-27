@@ -13,8 +13,8 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 
-import com.microsoft.tfs.client.common.ui.framework.helper.UIHelpers;
-import com.microsoft.tfs.client.common.ui.wit.form.controls.LabelableControl;
+import com.github.lizhanyin.tfs.client.ui.ui.framework.helper.UIHelpers;
+import com.github.lizhanyin.tfs.client.ui.ui.wit.form.controls.LabelableControl;
 import com.microsoft.tfs.core.clients.workitem.fields.Field;
 import com.microsoft.tfs.core.clients.workitem.fields.FieldChangeEvent;
 import com.microsoft.tfs.core.clients.workitem.fields.FieldChangeListener;

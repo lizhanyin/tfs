@@ -6,6 +6,6 @@ Bundle-Version: 14.139.1.qualifier
 Bundle-Vendor: Microsoft Corporation
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-11
-Require-Bundle: com.microsoft.tfs.client.common.ui,
+Require-Bundle: com.github.lizhanyin.tfs.client.ui.ui,
  org.eclipse.ui,
  org.eclipse.ui.forms

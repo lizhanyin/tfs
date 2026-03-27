@@ -8,12 +8,12 @@ import java.net.URISyntaxException;
 
 import org.eclipse.swt.widgets.Shell;
 
-import com.microsoft.tfs.client.common.ui.browser.BrowserFacade;
-import com.microsoft.tfs.client.common.ui.browser.BrowserFacade.LaunchMode;
-import com.microsoft.tfs.client.common.ui.teamexplorer.TeamExplorerContext;
-import com.microsoft.tfs.client.common.ui.teamexplorer.TeamExplorerNavigator;
-import com.microsoft.tfs.client.common.ui.teamexplorer.internal.TeamExplorerNavigationItemConfig;
-import com.microsoft.tfs.client.common.ui.teamexplorer.link.TeamExplorerBaseNavigationLink;
+import com.github.lizhanyin.tfs.client.ui.ui.browser.BrowserFacade;
+import com.github.lizhanyin.tfs.client.ui.ui.browser.BrowserFacade.LaunchMode;
+import com.github.lizhanyin.tfs.client.ui.ui.teamexplorer.TeamExplorerContext;
+import com.github.lizhanyin.tfs.client.ui.ui.teamexplorer.TeamExplorerNavigator;
+import com.github.lizhanyin.tfs.client.ui.ui.teamexplorer.internal.TeamExplorerNavigationItemConfig;
+import com.github.lizhanyin.tfs.client.ui.ui.teamexplorer.link.TeamExplorerBaseNavigationLink;
 
 public class TeamExplorerSampleNavigationLink extends TeamExplorerBaseNavigationLink {
 

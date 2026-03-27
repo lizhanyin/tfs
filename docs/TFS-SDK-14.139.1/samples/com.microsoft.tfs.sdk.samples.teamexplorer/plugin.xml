@@ -3,7 +3,7 @@
 <plugin>
    
    <extension
-         point="com.microsoft.tfs.client.common.ui.teamExplorerNavigationItem">
+         point="com.github.lizhanyin.tfs.client.ui.ui.teamExplorerNavigationItem">
       <teamExplorerNavigationItem
             class="com.microsoft.tfs.sdk.samples.teamexplorer.TeamExplorerSampleNavigationItem"
             displayPriority="1001"
@@ -22,7 +22,7 @@
    </extension>
    
    <extension
-         point="com.microsoft.tfs.client.common.ui.teamExplorerPage">
+         point="com.github.lizhanyin.tfs.client.ui.ui.teamExplorerPage">
       <teamExplorerPage
             class="com.microsoft.tfs.sdk.samples.teamexplorer.TeamExplorerSamplePage"
             displayPriority="1001"
@@ -43,7 +43,7 @@
          point="org.eclipse.ui.views">
       <view
             allowMultiple="false"
-            category="com.microsoft.tfs.client.common.ui.views"
+            category="com.github.lizhanyin.tfs.client.ui.ui.views"
             class="com.microsoft.tfs.sdk.samples.teamexplorer.TeamExplorerSampleView"
             id="com.microsoft.tfs.sdk.samples.teamexplorer.TeamExplorerSampleView"
             name="Sample Dockable Page"
@@ -51,7 +51,7 @@
    </extension>
    
    <extension
-         point="com.microsoft.tfs.client.common.ui.teamExplorerPageSection">
+         point="com.github.lizhanyin.tfs.client.ui.ui.teamExplorerPageSection">
       <teamExplorerPageSection
             class="com.microsoft.tfs.sdk.samples.teamexplorer.TeamExplorerSampleSection1"
             displayPriority="100"
@@ -91,7 +91,7 @@
    </extension>
    
    <extension
-         point="com.microsoft.tfs.client.common.ui.teamExplorerNavigationLink">
+         point="com.github.lizhanyin.tfs.client.ui.ui.teamExplorerNavigationLink">
       <teamExplorerNavigationLink
             class="com.microsoft.tfs.sdk.samples.teamexplorer.TeamExplorerSampleNavigationLink"
             displayPriority="100"

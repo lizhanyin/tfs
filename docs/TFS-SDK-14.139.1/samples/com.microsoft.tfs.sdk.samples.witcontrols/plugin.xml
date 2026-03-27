@@ -2,7 +2,7 @@
 <?eclipse version="3.4"?>
 <plugin>
    <extension
-         point="com.microsoft.tfs.client.common.ui.workItemControls">
+         point="com.github.lizhanyin.tfs.client.ui.ui.workItemControls">
       <workItemControl
             class="com.microsoft.tfs.sdk.samples.witcontrols.SimpleButtonControl"
             controlType="SimpleButtonControl"
@@ -10,7 +10,7 @@
       </workItemControl>
    </extension>
    <extension
-         point="com.microsoft.tfs.client.common.ui.workItemControls">
+         point="com.github.lizhanyin.tfs.client.ui.ui.workItemControls">
       <workItemControl
             class="com.microsoft.tfs.sdk.samples.witcontrols.FileSourceDropdown"
             controlType="FileSourceDropdown"
@@ -18,7 +18,7 @@
       </workItemControl>
    </extension>
    <extension
-         point="com.microsoft.tfs.client.common.ui.workItemControls">
+         point="com.github.lizhanyin.tfs.client.ui.ui.workItemControls">
       <workItemControl
             class="com.microsoft.tfs.sdk.samples.witcontrols.RadioButtonsControl"
             controlType="RadioButtonsControl"

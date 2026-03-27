@@ -9,11 +9,11 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 
-import com.microsoft.tfs.client.common.ui.framework.helper.SWTUtil;
-import com.microsoft.tfs.client.common.ui.framework.layout.GridDataBuilder;
-import com.microsoft.tfs.client.common.ui.teamexplorer.TeamExplorerContext;
-import com.microsoft.tfs.client.common.ui.teamexplorer.sections.ITeamExplorerSection;
-import com.microsoft.tfs.client.common.ui.teamexplorer.sections.TeamExplorerSectionRegenerateListener;
+import com.github.lizhanyin.tfs.client.ui.ui.framework.helper.SWTUtil;
+import com.github.lizhanyin.tfs.client.ui.ui.framework.layout.GridDataBuilder;
+import com.github.lizhanyin.tfs.client.ui.ui.teamexplorer.TeamExplorerContext;
+import com.github.lizhanyin.tfs.client.ui.ui.teamexplorer.sections.ITeamExplorerSection;
+import com.github.lizhanyin.tfs.client.ui.ui.teamexplorer.sections.TeamExplorerSectionRegenerateListener;
 
 public class TeamExplorerSampleBaseSection1 implements ITeamExplorerSection {
     private String id;

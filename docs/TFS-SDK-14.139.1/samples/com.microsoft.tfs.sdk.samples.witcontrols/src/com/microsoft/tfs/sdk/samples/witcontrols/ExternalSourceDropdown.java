@@ -14,11 +14,11 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 
-import com.microsoft.tfs.client.common.ui.controls.generic.AutocompleteCombo;
-import com.microsoft.tfs.client.common.ui.framework.helper.UIHelpers;
-import com.microsoft.tfs.client.common.ui.wit.form.FieldTracker;
-import com.microsoft.tfs.client.common.ui.wit.form.controls.LabelableControl;
-import com.microsoft.tfs.client.common.ui.wit.form.controls.RequiredDecorationFocusListener;
+import com.github.lizhanyin.tfs.client.ui.ui.controls.generic.AutocompleteCombo;
+import com.github.lizhanyin.tfs.client.ui.ui.framework.helper.UIHelpers;
+import com.github.lizhanyin.tfs.client.ui.ui.wit.form.FieldTracker;
+import com.github.lizhanyin.tfs.client.ui.ui.wit.form.controls.LabelableControl;
+import com.github.lizhanyin.tfs.client.ui.ui.wit.form.controls.RequiredDecorationFocusListener;
 import com.microsoft.tfs.core.clients.workitem.fields.Field;
 import com.microsoft.tfs.core.clients.workitem.fields.FieldChangeEvent;
 import com.microsoft.tfs.core.clients.workitem.fields.FieldChangeListener;

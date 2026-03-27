@@ -6,8 +6,8 @@ package com.microsoft.tfs.sdk.samples.teamexplorer;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 
-import com.microsoft.tfs.client.common.ui.teamexplorer.TeamExplorerContext;
-import com.microsoft.tfs.client.common.ui.teamexplorer.pages.TeamExplorerBasePage;
+import com.github.lizhanyin.tfs.client.ui.ui.teamexplorer.TeamExplorerContext;
+import com.github.lizhanyin.tfs.client.ui.ui.teamexplorer.pages.TeamExplorerBasePage;
 
 public class TeamExplorerSamplePage extends TeamExplorerBasePage {
 

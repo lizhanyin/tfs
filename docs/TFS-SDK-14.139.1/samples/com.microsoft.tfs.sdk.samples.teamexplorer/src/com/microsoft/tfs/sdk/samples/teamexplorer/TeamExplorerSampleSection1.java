@@ -3,7 +3,7 @@
 
 package com.microsoft.tfs.sdk.samples.teamexplorer;
 
-import com.microsoft.tfs.client.common.ui.teamexplorer.sections.TeamExplorerBaseSection;
+import com.github.lizhanyin.tfs.client.ui.ui.teamexplorer.sections.TeamExplorerBaseSection;
 
 public class TeamExplorerSampleSection1 extends TeamExplorerBaseSection {
 

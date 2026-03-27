@@ -1,6 +1,6 @@
 # TFS 服务器连接认证流程分析
 
-> 分析路径: `team-explorer-everywhere\source\com.microsoft.tfs.client.common.ui`
+> 分析路径: `team-explorer-everywhere\source\com.github.lizhanyin.tfs.client.ui.ui`
 
 ---
 

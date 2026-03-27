@@ -10,8 +10,8 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 
-import com.microsoft.tfs.client.common.ui.wit.form.FormContext;
-import com.microsoft.tfs.client.common.ui.wit.form.controls.IWorkItemControl;
+import com.github.lizhanyin.tfs.client.ui.ui.wit.form.FormContext;
+import com.github.lizhanyin.tfs.client.ui.ui.wit.form.controls.IWorkItemControl;
 import com.microsoft.tfs.core.clients.workitem.form.WIFormElement;
 
 /**

@@ -10,9 +10,9 @@ Team Explorer Everywhere (TEE) 是一个 Eclipse 插件，提供与 Team Foundat
 
 ## UI 模块划分
 
-### 1. com.microsoft.tfs.client.common.ui (核心 UI 模块)
+### 1. com.github.lizhanyin.tfs.client.ui.ui (核心 UI 模块)
 
-**路径**: `source/com.microsoft.tfs.client.common.ui/src/com/microsoft/tfs/client/common/ui`
+**路径**: `source/com.github.lizhanyin.tfs.client.ui.ui/src/com.github.lizhanyin.tfs.client.ui/ui`
 
 **文件数量**: 1046 个 Java 文件
 
@@ -214,9 +214,9 @@ Team Explorer Everywhere (TEE) 是一个 Eclipse 插件，提供与 Team Foundat
 
 ---
 
-### 3. com.microsoft.tfs.client.common.ui.teambuild (团队构建 UI)
+### 3. com.github.lizhanyin.tfs.client.ui.ui.teambuild (团队构建 UI)
 
-**路径**: `source/com.microsoft.tfs.client.common.ui.teambuild/src/com/microsoft/tfs/client/common/ui/teambuild`
+**路径**: `source/com.github.lizhanyin.tfs.client.ui.ui.teambuild/src/com.github.lizhanyin.tfs.client.ui/ui/teambuild`
 
 **文件数量**: 150 个 Java 文件
 
@@ -261,9 +261,9 @@ Team Explorer Everywhere (TEE) 是一个 Eclipse 插件，提供与 Team Foundat
 
 ---
 
-### 4. com.microsoft.tfs.client.common.ui.teambuild.egit (EGit 构建集成)
+### 4. com.github.lizhanyin.tfs.client.ui.ui.teambuild.egit (EGit 构建集成)
 
-**路径**: `source/com.microsoft.tfs.client.common.ui.teambuild.egit/src/com/microsoft/tfs/client/common/ui/teambuild/egit`
+**路径**: `source/com.github.lizhanyin.tfs.client.ui.ui.teambuild.egit/src/com.github.lizhanyin.tfs.client.ui/ui/teambuild/egit`
 
 **主要功能**: 提供与 EGit (Eclipse Git 插件) 的构建集成
 
@@ -282,9 +282,9 @@ Team Explorer Everywhere (TEE) 是一个 Eclipse 插件，提供与 Team Foundat
 
 ---
 
-### 5. com.microsoft.tfs.client.common.ui.vcexplorer (版本控制资源管理器)
+### 5. com.github.lizhanyin.tfs.client.ui.ui.vcexplorer (版本控制资源管理器)
 
-**路径**: `source/com.microsoft.tfs.client.common.ui.vcexplorer/src/com/microsoft/tfs/client/common/ui/vcexplorer`
+**路径**: `source/com.github.lizhanyin.tfs.client.ui.ui.vcexplorer/src/com.github.lizhanyin.tfs.client.ui/ui/vcexplorer`
 
 **文件数量**: 59 个 Java 文件
 
@@ -391,16 +391,16 @@ Team Explorer Everywhere (TEE) 是一个 Eclipse 插件，提供与 Team Foundat
 
 ```
 com.microsoft.tfs.client.eclipse.ui
-    └── com.microsoft.tfs.client.common.ui
-            ├── com.microsoft.tfs.client.common (核心客户端)
+    └── com.github.lizhanyin.tfs.client.ui.ui
+            ├── com.github.lizhanyin.tfs.client.ui (核心客户端)
             ├── com.microsoft.tfs.core (核心库)
             └── com.microsoft.tfs.util (工具库)
 
-com.microsoft.tfs.client.common.ui.teambuild
-    └── com.microsoft.tfs.client.common.ui
+com.github.lizhanyin.tfs.client.ui.ui.teambuild
+    └── com.github.lizhanyin.tfs.client.ui.ui
 
-com.microsoft.tfs.client.common.ui.vcexplorer
-    └── com.microsoft.tfs.client.common.ui
+com.github.lizhanyin.tfs.client.ui.ui.vcexplorer
+    └── com.github.lizhanyin.tfs.client.ui.ui
 ```
 
 ---
