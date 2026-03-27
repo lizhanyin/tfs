@@ -1,0 +1,56 @@
+package com.github.lizhanyin.tfs.wizard
+
+/**
+ * 导入项目向导上下文
+ * 用于在向导步骤之间共享数据
+ */
+class ImportProjectContext {
+    // 服务器信息
+    var serverUrl: String? = null
+    var collectionName: String? = null
+    var username: String? = null
+    var password: String? = null
+    var domain: String? = null
+    var authType: AuthType = AuthType.NTLM
+
+    // 团队项目
+    var teamProject: String? = null
+
+    // 选中的项目/分支
+    val selectedProjects: MutableList<String> = mutableListOf()
+
+    // 本地路径
+    var localPath: String? = null
+
+    /**
+     * 获取完整的集合 URL
+     */
+    val collectionUrl: String
+        get() {
+            val url = serverUrl ?: return ""
+            val baseUrl = url.trimEnd('/')
+            val collection = collectionName
+            return if (collection.isNullOrEmpty()) baseUrl else "$baseUrl/$collection"
+        }
+
+    /**
+     * 检查服务器配置是否完整
+     */
+    fun isServerConfigured(): Boolean = !serverUrl.isNullOrEmpty()
+
+    /**
+     * 检查是否已选择团队项目
+     */
+    fun isTeamProjectSelected(): Boolean = !teamProject.isNullOrEmpty()
+
+    /**
+     * 认证类型枚举
+     */
+    enum class AuthType(val displayName: String) {
+        NTLM("Windows 集成认证 (NTLM)"),
+        BASIC("基本认证"),
+        PAT("个人访问令牌");
+
+        override fun toString(): String = displayName
+    }
+}
