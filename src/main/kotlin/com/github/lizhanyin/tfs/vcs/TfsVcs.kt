@@ -4,7 +4,6 @@ import com.github.lizhanyin.tfs.changes.TfsChangeProvider
 import com.github.lizhanyin.tfs.services.TfsService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vcs.AbstractVcs
-import com.intellij.openapi.vcs.FilePath
 import com.intellij.openapi.vcs.ProjectLevelVcsManager
 import com.intellij.openapi.vcs.changes.ChangeProvider
 import com.intellij.openapi.vcs.history.VcsHistoryProvider
@@ -20,11 +19,6 @@ class TfsVcs(project: Project) : AbstractVcs(project, TFS_VCS_NAME) {
         @NonNls
         const val TFS_VCS_NAME = "TFS"
 
-        @JvmStatic
-        fun getInstance(project: Project): TfsVcs? {
-            val vcsManager = ProjectLevelVcsManager.getInstance(project)
-            return vcsManager.findVcsByName(TFS_VCS_NAME) as? TfsVcs
-        }
     }
 
     private val tfsService: TfsService = TfsService.getInstance(project)
@@ -50,7 +44,7 @@ class TfsVcs(project: Project) : AbstractVcs(project, TFS_VCS_NAME) {
 
     fun getService(): TfsService = tfsService
 
-    fun isConfigured(): Boolean = tfsService.isConfigured()
+    fun isConfigured(): Boolean = tfsService.isConfigured
 
     fun isInitialized(): Boolean = tfsService.isInitialized
 
@@ -65,4 +59,9 @@ class TfsVcs(project: Project) : AbstractVcs(project, TFS_VCS_NAME) {
             return changesetId.compareTo(other.changesetId)
         }
     }
+}
+
+fun getInstance(project: Project): TfsVcs? {
+    val vcsManager = ProjectLevelVcsManager.getInstance(project)
+    return vcsManager.findVcsByName(TfsVcs.Companion.TFS_VCS_NAME) as? TfsVcs
 }

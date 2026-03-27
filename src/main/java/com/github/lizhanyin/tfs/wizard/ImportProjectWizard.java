@@ -25,7 +25,7 @@ import java.util.List;
  */
 public class ImportProjectWizard extends DialogWrapper {
 
-    public static final String TITLE = "从 TFS 导入项目";
+    public static final String TITLE = "从 Team Foundation Server 导入项目";
 
     @Nullable
     private final Project project;
@@ -82,25 +82,28 @@ public class ImportProjectWizard extends DialogWrapper {
     protected JComponent createSouthPanel() {
         JPanel southPanel = new JPanel(new BorderLayout());
 
-        // 左侧导航按钮
-        JPanel navigationPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        // 导航按钮面板（按照 UI 设计：上一步、下一步、完成、放弃）
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+
         previousButton = new JButton("上一步");
         previousButton.addActionListener(e -> goToPreviousStep());
         previousButton.setEnabled(false);
-        navigationPanel.add(previousButton);
+        buttonPanel.add(previousButton);
 
         nextButton = new JButton("下一步");
         nextButton.addActionListener(e -> goToNextStep());
-        navigationPanel.add(nextButton);
+        buttonPanel.add(nextButton);
 
-        southPanel.add(navigationPanel, BorderLayout.WEST);
+        // 完成按钮
+        JButton finishButton = createJButtonForAction(getOKAction());
+        buttonPanel.add(finishButton);
 
-        // 右侧标准按钮
-        JPanel standardButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        standardButtons.add(createJButtonForAction(getOKAction()));
-        standardButtons.add(createJButtonForAction(getCancelAction()));
-        southPanel.add(standardButtons, BorderLayout.EAST);
+        // 放弃按钮
+        setCancelButtonText("放弃");
+        JButton cancelButton = createJButtonForAction(getCancelAction());
+        buttonPanel.add(cancelButton);
 
+        southPanel.add(buttonPanel, BorderLayout.EAST);
         southPanel.setBorder(JBUI.Borders.emptyTop(10));
         return southPanel;
     }
@@ -135,17 +138,17 @@ public class ImportProjectWizard extends DialogWrapper {
             return;
         }
 
+        // 上一步按钮：第一步时禁用
         previousButton.setEnabled(currentStepIndex > 0);
 
         boolean isLastStep = currentStepIndex == steps.size() - 1;
-        nextButton.setEnabled(!isLastStep);
-        nextButton.setVisible(!isLastStep);
 
-        if (isLastStep) {
-            setOKButtonText("导入");
-        } else {
-            setOKButtonText("下一步");
-        }
+        // 下一步按钮：最后一步时禁用
+        nextButton.setEnabled(!isLastStep);
+
+        // 完成按钮：只在最后一步启用
+        setOKActionEnabled(isLastStep);
+        setOKButtonText("完成");
     }
 
     /**
@@ -185,18 +188,15 @@ public class ImportProjectWizard extends DialogWrapper {
 
     @Override
     protected void doOKAction() {
+        // 完成按钮只在最后一步启用，直接执行导入
         AbstractWizardStep currentStep = steps.get(currentStepIndex);
 
         if (!currentStep.isComplete()) {
-            if (currentStepIndex == steps.size() - 1) {
-                Messages.showWarningDialog(
-                        contentPanel,
-                        "请完成当前步骤的必填项",
-                        "无法导入"
-                );
-            } else {
-                goToNextStep();
-            }
+            Messages.showWarningDialog(
+                    contentPanel,
+                    "请完成当前步骤的必填项",
+                    "无法导入"
+            );
             return;
         }
 
@@ -205,13 +205,8 @@ public class ImportProjectWizard extends DialogWrapper {
             return;
         }
 
-        if (currentStepIndex < steps.size() - 1) {
-            // 不是最后一步，执行下一步
-            goToNextStep();
-        } else {
-            // 最后一步，执行导入
-            executeImport();
-        }
+        // 执行导入
+        executeImport();
     }
 
     /**
