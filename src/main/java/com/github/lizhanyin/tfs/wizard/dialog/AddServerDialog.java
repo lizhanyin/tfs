@@ -353,9 +353,10 @@ public class AddServerDialog extends DialogWrapper {
                     TfsConnectionService connectionService = ApplicationManager.getApplication().getService(TfsConnectionService.class);
 
                     // 创建临时上下文
+                    // 不再硬编码 DefaultCollection，让 smartConnect 自动检测
                     ImportProjectContext testContext = new ImportProjectContext();
                     testContext.setServerUrl(url);
-                    testContext.setCollectionName("DefaultCollection");
+                    // collectionName 可以为空，连接服务会自动尝试
                     if (savedCredentialType == CredentialsDialog.CredentialType.PERSONAL_ACCESS_TOKEN) {
                         testContext.setAuthType(ImportProjectContext.AuthType.PAT);
                         testContext.setPassword(savedPassword);
