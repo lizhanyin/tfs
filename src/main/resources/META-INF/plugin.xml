@@ -16,13 +16,18 @@
 
     <depends>com.intellij.modules.platform</depends>
 
-    <resource-bundle>messages.MyBundle</resource-bundle>
+    <resource-bundle>messages.TfsBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
         <!-- VCS 核心注册 -->
         <vcs name="TFS"
              vcsClass="com.github.lizhanyin.tfs.vcs.TfsVcs"
              displayName="Team Foundation Server"/>
+
+        <!-- 应用级服务 -->
+        <applicationService serviceImplementation="com.github.lizhanyin.tfs.settings.TfsServerConfiguration"/>
+        <applicationService serviceInterface="com.github.lizhanyin.tfs.services.TfsConnectionService"
+                            serviceImplementation="com.github.lizhanyin.tfs.services.impl.TfsConnectionServiceImpl"/>
 
         <!-- 项目服务 -->
         <projectService serviceImplementation="com.github.lizhanyin.tfs.services.TfsService"/>
@@ -50,6 +55,13 @@
     <actions>
         <group id="TFSGroup" text="TFS" popup="true">
             <add-to-group group-id="VcsGroups" anchor="after" relative-to-action="Vcs.Operations"/>
+
+            <action id="TFS.ImportProject"
+                    class="com.github.lizhanyin.tfs.actions.ImportProjectAction"
+                    text="从 TFS 导入项目..."
+                    description="从 TFS 服务器导入项目"/>
+
+            <separator/>
 
             <action id="TFS.GetLatest"
                     class="com.github.lizhanyin.tfs.actions.GetLatestAction"
