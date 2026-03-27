@@ -14,6 +14,11 @@ plugins {
 group = providers.gradleProperty("pluginGroup").get()
 version = providers.gradleProperty("pluginVersion").get()
 
+// 设置编译编码
+tasks.withType<JavaCompile> {
+    options.encoding = "UTF-8"
+}
+
 // Set the JVM language level used to build the project.
 kotlin {
     jvmToolchain(21)

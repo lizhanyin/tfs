@@ -1,6 +1,7 @@
 package com.github.lizhanyin.tfs.services.impl;
 
 import com.github.lizhanyin.tfs.services.TfsConnectionService;
+import com.github.lizhanyin.tfs.startup.TfsNativeLibraryInitializer;
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext;
 import com.microsoft.tfs.core.TFSTeamProjectCollection;
 import com.microsoft.tfs.core.clients.versioncontrol.VersionControlClient;
@@ -20,13 +21,18 @@ import java.util.List;
  */
 public class TfsConnectionServiceImpl implements TfsConnectionService {
 
+    public TfsConnectionServiceImpl() {
+        // 确保本地库已初始化
+        TfsNativeLibraryInitializer.INSTANCE.init();
+    }
+
     @Override
     public boolean testConnection(@NotNull ImportProjectContext context) {
         TFSTeamProjectCollection tpc = null;
         try {
             tpc = connect(context);
-            // 尝试获取工作项客户端来验证连接
-            tpc.getWorkItemClient();
+            // 通过调用客户端方法触发登录验证
+            tpc.getVersionControlClient().getItem("$/");
             return true;
         } catch (Exception e) {
             return false;

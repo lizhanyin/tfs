@@ -18,6 +18,11 @@
 
     <resource-bundle>messages.TfsBundle</resource-bundle>
 
+    <applicationListeners>
+        <listener class="com.github.lizhanyin.tfs.startup.TfsAppLifecycleListener"
+                  topic="com.intellij.ide.AppLifecycleListener"/>
+    </applicationListeners>
+
     <extensions defaultExtensionNs="com.intellij">
         <!-- VCS 核心注册 -->
         <vcs name="TFS"

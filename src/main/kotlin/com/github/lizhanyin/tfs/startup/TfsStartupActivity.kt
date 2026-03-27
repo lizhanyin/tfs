@@ -19,6 +19,9 @@ class TfsStartupActivity : ProjectActivity {
     override suspend fun execute(project: Project) {
         LOG.info("TFS plugin starting for project: ${project.name}")
 
+        // 初始化 TFS 本地库
+        TfsNativeLibraryInitializer.init()
+
         val settings = TfsSettings.getInstance(project)
         val tfsService = TfsService.getInstance(project)
 
