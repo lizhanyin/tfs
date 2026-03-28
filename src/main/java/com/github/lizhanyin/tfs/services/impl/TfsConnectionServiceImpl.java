@@ -1,8 +1,13 @@
 package com.github.lizhanyin.tfs.services.impl;
 
+import com.github.lizhanyin.tfs.client.ui.tasks.ConnectToConfigurationServerTask;
+import com.github.lizhanyin.tfs.runtime.IStatus;
 import com.github.lizhanyin.tfs.services.TfsConnectionService;
+import com.github.lizhanyin.tfs.settings.TfsServerConfiguration;
 import com.github.lizhanyin.tfs.startup.TfsNativeLibraryInitializer;
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext;
+import com.intellij.openapi.diagnostic.Logger;
+import com.microsoft.tfs.core.TFSConnection;
 import com.microsoft.tfs.core.TFSTeamProjectCollection;
 import com.microsoft.tfs.core.clients.versioncontrol.VersionControlClient;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Item;
@@ -11,44 +16,51 @@ import com.microsoft.tfs.core.httpclient.Credentials;
 import com.microsoft.tfs.core.httpclient.DefaultNTCredentials;
 import com.microsoft.tfs.core.httpclient.UsernamePasswordCredentials;
 import com.microsoft.tfs.core.util.URIUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * TFS 连接服务实现
- * 参考 Eclipse 插件的认证流程，支持 On-Premises TFS 连接
+ *
+ * 参考 Eclipse 插件的认证流程，支持 On-Premises TFS 连接。
+ * 可以使用 ImportProjectContext 或存储的 ServerConfig 进行连接。
+ *
+ * @threadsafety thread-safe
  */
 public class TfsConnectionServiceImpl implements TfsConnectionService {
-    private static final Log log = LogFactory.getLog(TfsConnectionServiceImpl.class);
+    private static final Logger log = Logger.getInstance(TfsConnectionServiceImpl.class);
+
+    /**
+     * 默认连接超时时间（毫秒）
+     */
+    private static final long DEFAULT_TIMEOUT = 30000;
 
     public TfsConnectionServiceImpl() {
         // 确保本地库已初始化
         TfsNativeLibraryInitializer.INSTANCE.init();
     }
 
+    // ==================== 测试连接 ====================
+
     @Override
     public boolean testConnection(@NotNull ImportProjectContext context) {
-        TFSTeamProjectCollection tpc = null;
         try {
-            // 使用智能连接方式，自动检测服务器类型
-            tpc = smartConnect(context);
-            return true;
+            Credentials credentials = createCredentials(context);
+            URI uri = URIUtils.newURI(context.getServerUrl());
+            final ConnectToConfigurationServerTask task = new ConnectToConfigurationServerTask(null, uri, credentials);
+            IStatus status = task.run();
+            return status.isOK();
         } catch (Exception e) {
             log.error("连接测试失败", e);
             return false;
-        } finally {
-            if (tpc != null) {
-                try {
-                    tpc.close();
-                } catch (Exception ignored) {
-                }
-            }
         }
     }
+
+    // ==================== 获取团队项目 ====================
 
     @Override
     @NotNull
@@ -56,20 +68,25 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
         TFSTeamProjectCollection tpc = null;
         try {
             tpc = smartConnect(context);
-            List<String> projects = new ArrayList<>();
-            for (com.microsoft.tfs.core.clients.workitem.project.Project project : tpc.getWorkItemClient().getProjects()) {
-                projects.add(project.getName());
-            }
-            return projects;
+            return getTeamProjectNames(tpc);
         } finally {
-            if (tpc != null) {
-                try {
-                    tpc.close();
-                } catch (Exception ignored) {
-                }
-            }
+            closeConnection(tpc);
         }
     }
+
+    @Override
+    @NotNull
+    public List<String> getTeamProjects(@NotNull TfsServerConfiguration.ServerConfig serverConfig) throws Exception {
+        TFSTeamProjectCollection tpc = null;
+        try {
+            tpc = smartConnectFromConfig(serverConfig);
+            return getTeamProjectNames(tpc);
+        } finally {
+            closeConnection(tpc);
+        }
+    }
+
+    // ==================== 获取项目项 ====================
 
     @Override
     @NotNull
@@ -77,36 +94,25 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
         TFSTeamProjectCollection tpc = null;
         try {
             tpc = smartConnect(context);
-            VersionControlClient vcClient = tpc.getVersionControlClient();
-            List<ProjectItemInfo> items = new ArrayList<>();
-
-            // 获取团队项目根路径下的项目
-            String serverPath = "$/" + teamProject;
-            Item[] tfsItems = vcClient.getItems(serverPath, RecursionType.ONE_LEVEL).getItems();
-
-            if (tfsItems != null) {
-                for (Item item : tfsItems) {
-                    // 排除根目录本身
-                    if (!item.getServerItem().equals(serverPath)) {
-                        items.add(new ProjectItemInfo(
-                                item.getServerItem(),
-                                item.getItemType() == com.microsoft.tfs.core.clients.versioncontrol.soapextensions.ItemType.FOLDER
-                                        ? ItemType.FOLDER : ItemType.FILE
-                        ));
-                    }
-                }
-            }
-
-            return items;
+            return doGetProjectItems(tpc, teamProject);
         } finally {
-            if (tpc != null) {
-                try {
-                    tpc.close();
-                } catch (Exception ignored) {
-                }
-            }
+            closeConnection(tpc);
         }
     }
+
+    @Override
+    @NotNull
+    public List<ProjectItemInfo> getProjectItems(@NotNull TfsServerConfiguration.ServerConfig serverConfig, @NotNull String teamProject) throws Exception {
+        TFSTeamProjectCollection tpc = null;
+        try {
+            tpc = smartConnectFromConfig(serverConfig);
+            return doGetProjectItems(tpc, teamProject);
+        } finally {
+            closeConnection(tpc);
+        }
+    }
+
+    // ==================== 获取子项目 ====================
 
     @Override
     @NotNull
@@ -114,77 +120,118 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
         TFSTeamProjectCollection tpc = null;
         try {
             tpc = smartConnect(context);
-            VersionControlClient vcClient = tpc.getVersionControlClient();
-            List<ProjectItemInfo> items = new ArrayList<>();
-
-            Item[] tfsItems = vcClient.getItems(parentPath, RecursionType.ONE_LEVEL).getItems();
-
-            if (tfsItems != null) {
-                for (Item item : tfsItems) {
-                    // 排除当前目录本身
-                    if (!item.getServerItem().equals(parentPath)) {
-                        items.add(new ProjectItemInfo(
-                                item.getServerItem(),
-                                item.getItemType() == com.microsoft.tfs.core.clients.versioncontrol.soapextensions.ItemType.FOLDER
-                                        ? ItemType.FOLDER : ItemType.FILE
-                        ));
-                    }
-                }
-            }
-
-            return items;
+            return doGetChildItems(tpc, parentPath);
         } finally {
-            if (tpc != null) {
-                try {
-                    tpc.close();
-                } catch (Exception ignored) {
+            closeConnection(tpc);
+        }
+    }
+
+    @Override
+    @NotNull
+    public List<ProjectItemInfo> getChildItems(@NotNull TfsServerConfiguration.ServerConfig serverConfig, @NotNull String parentPath) throws Exception {
+        TFSTeamProjectCollection tpc = null;
+        try {
+            tpc = smartConnectFromConfig(serverConfig);
+            return doGetChildItems(tpc, parentPath);
+        } finally {
+            closeConnection(tpc);
+        }
+    }
+
+    // ==================== 私有辅助方法 ====================
+
+    private List<String> getTeamProjectNames(TFSTeamProjectCollection tpc) {
+        List<String> projects = new ArrayList<>();
+        for (com.microsoft.tfs.core.clients.workitem.project.Project project : tpc.getWorkItemClient().getProjects()) {
+            projects.add(project.getName());
+        }
+        return projects;
+    }
+
+    private List<ProjectItemInfo> doGetProjectItems(TFSTeamProjectCollection tpc, String teamProject) {
+        VersionControlClient vcClient = tpc.getVersionControlClient();
+        List<ProjectItemInfo> items = new ArrayList<>();
+
+        String serverPath = "$/" + teamProject;
+        Item[] tfsItems = vcClient.getItems(serverPath, RecursionType.ONE_LEVEL).getItems();
+
+        if (tfsItems != null) {
+            for (Item item : tfsItems) {
+                if (!item.getServerItem().equals(serverPath)) {
+                    items.add(new ProjectItemInfo(
+                            item.getServerItem(),
+                            item.getItemType() == com.microsoft.tfs.core.clients.versioncontrol.soapextensions.ItemType.FOLDER
+                                    ? ItemType.FOLDER : ItemType.FILE
+                    ));
                 }
             }
         }
+
+        return items;
+    }
+
+    private List<ProjectItemInfo> doGetChildItems(TFSTeamProjectCollection tpc, String parentPath) {
+        VersionControlClient vcClient = tpc.getVersionControlClient();
+        List<ProjectItemInfo> items = new ArrayList<>();
+
+        Item[] tfsItems = vcClient.getItems(parentPath, RecursionType.ONE_LEVEL).getItems();
+
+        if (tfsItems != null) {
+            for (Item item : tfsItems) {
+                if (!item.getServerItem().equals(parentPath)) {
+                    items.add(new ProjectItemInfo(
+                            item.getServerItem(),
+                            item.getItemType() == com.microsoft.tfs.core.clients.versioncontrol.soapextensions.ItemType.FOLDER
+                                    ? ItemType.FOLDER : ItemType.FILE
+                    ));
+                }
+            }
+        }
+
+        return items;
     }
 
     /**
      * 智能连接到 TFS 服务器
-     * 参考 Eclipse 插件的 ConnectToConfigurationServerCommand 实现
-     * 对于 On-Premises TFS，会尝试多种连接方式：
-     * 1. 直接连接到服务器 URL（作为项目集合）
-     * 2. 如果失败，尝试在 URL 后追加集合名
      */
     private @NotNull TFSTeamProjectCollection smartConnect(@NotNull ImportProjectContext context) throws Exception {
         Credentials credentials = createCredentials(context);
         List<String> urlsToTry = getUrls(context);
 
+        return doSmartConnect(urlsToTry, credentials);
+    }
+
+    /**
+     * 从存储的配置智能连接到 TFS 服务器
+     */
+    private @NotNull TFSTeamProjectCollection smartConnectFromConfig(@NotNull TfsServerConfiguration.ServerConfig serverConfig) throws Exception {
+        Credentials credentials = createCredentialsFromConfig(serverConfig);
+        List<String> urlsToTry = getUrlsFromConfig(serverConfig);
+
+        return doSmartConnect(urlsToTry, credentials);
+    }
+
+    /**
+     * 执行智能连接
+     */
+    private TFSTeamProjectCollection doSmartConnect(List<String> urlsToTry, Credentials credentials) throws Exception {
         Exception lastException = null;
         for (String url : urlsToTry) {
             TFSTeamProjectCollection tpc = null;
             try {
                 log.info("尝试连接: " + url);
-                tpc = new TFSTeamProjectCollection(
-                        URIUtils.newURI(url),
-                        credentials
-                );
-
-                // 执行认证
+                tpc = new TFSTeamProjectCollection(URIUtils.newURI(url), credentials);
                 tpc.authenticate();
                 log.info("连接成功: " + url);
-
                 return tpc;
             } catch (Exception e) {
                 log.warn("连接失败 (" + url + "): " + e.getMessage());
                 lastException = e;
+                closeConnection(tpc);
 
-                if (tpc != null) {
-                    try {
-                        tpc.close();
-                    } catch (Exception ignored) {
-                    }
-                }
-
-                // 认证失败不重试
                 if (isAuthException(e)) {
                     throw e;
                 }
-                // 其他错误（如 404）继续尝试下一种方式
             }
         }
 
@@ -198,32 +245,45 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
             throw new IllegalArgumentException("服务器 URL 不能为空");
         }
 
-        // 清理 URL
         serverUrl = serverUrl.replaceAll("/$", "");
-
-        // 尝试的 URL 列表
         List<String> urlsToTry = new ArrayList<>();
 
-        // 1. 直接使用原始 URL
         urlsToTry.add(serverUrl);
 
-        // 2. 如果有集合名，尝试 URL/集合名
         if (context.getCollectionName() != null && !context.getCollectionName().isEmpty()) {
             urlsToTry.add(serverUrl + "/" + context.getCollectionName());
         }
 
-        // 3. 尝试 DefaultCollection
         if (!"DefaultCollection".equals(context.getCollectionName())) {
             urlsToTry.add(serverUrl + "/DefaultCollection");
         }
         return urlsToTry;
     }
 
-    /**
-     * 判断是否为认证异常
-     */
+    private static @NotNull List<String> getUrlsFromConfig(@NotNull TfsServerConfiguration.ServerConfig serverConfig) {
+        String serverUrl = serverConfig.getUrl();
+
+        if (serverUrl == null || serverUrl.isEmpty()) {
+            throw new IllegalArgumentException("服务器 URL 不能为空");
+        }
+
+        serverUrl = serverUrl.replaceAll("/$", "");
+        List<String> urlsToTry = new ArrayList<>();
+
+        urlsToTry.add(serverUrl);
+
+        String collection = serverConfig.getCollection();
+        if (collection != null && !collection.isEmpty()) {
+            urlsToTry.add(serverUrl + "/" + collection);
+        }
+
+        if (!"DefaultCollection".equals(collection)) {
+            urlsToTry.add(serverUrl + "/DefaultCollection");
+        }
+        return urlsToTry;
+    }
+
     private boolean isAuthException(Exception e) {
-        // 检查常见的认证失败情况
         String message = e.getMessage();
         if (message == null) {
             return false;
@@ -238,9 +298,6 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
                e.getClass().getName().contains("AccessDenied");
     }
 
-    /**
-     * 创建凭据
-     */
     private Credentials createCredentials(@NotNull ImportProjectContext context) {
         switch (context.getAuthType()) {
             case NTLM:
@@ -252,12 +309,53 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
                 String password = context.getPassword();
                 String domain = context.getDomain();
 
-                /* 如果有域名，组合为 DOMAIN\\username 格式 */
                 if (domain != null && !domain.isEmpty()) {
                     username = domain + "\\" + username;
                 }
 
                 return new UsernamePasswordCredentials(username, password);
+        }
+    }
+
+    private static Credentials createCredentialsFromConfig(@NotNull TfsServerConfiguration.ServerConfig serverConfig) {
+        final String authType = serverConfig.getAuthType();
+        final String username = serverConfig.getUsername();
+        final String password = serverConfig.getPassword();
+        final String domain = serverConfig.getDomain();
+
+        // PAT authentication
+        if ("PAT".equalsIgnoreCase(authType)) {
+            if (password != null && !password.isEmpty()) {
+                return new UsernamePasswordCredentials("", password);
+            }
+            return new DefaultNTCredentials();
+        }
+
+        // No credentials, use default NTLM
+        if (password == null || password.isEmpty()) {
+            return new DefaultNTCredentials();
+        }
+
+        // Username/password authentication
+        if (username != null && !username.isEmpty()) {
+            final String fullUsername;
+            if (domain != null && !domain.isEmpty()) {
+                fullUsername = domain + "\\" + username;
+            } else {
+                fullUsername = username;
+            }
+            return new UsernamePasswordCredentials(fullUsername, password);
+        }
+
+        return new DefaultNTCredentials();
+    }
+
+    private static void closeConnection(@Nullable TFSConnection connection) {
+        if (connection != null) {
+            try {
+                connection.close();
+            } catch (Exception ignored) {
+            }
         }
     }
 }

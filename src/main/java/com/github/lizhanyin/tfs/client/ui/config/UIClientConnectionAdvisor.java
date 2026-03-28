@@ -8,7 +8,6 @@ import java.util.TimeZone;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.osgi.util.tracker.ServiceTracker;
 
 
 import com.microsoft.tfs.core.config.ConnectionInstanceData;
@@ -32,16 +31,6 @@ public class UIClientConnectionAdvisor extends CommonClientConnectionAdvisor {
 
     @Override
     public HTTPClientFactory getHTTPClientFactory(final ConnectionInstanceData instanceData) {
-        final ServiceTracker proxyServiceTracker = TFSCommonUIClientPlugin.getDefault().getProxyServiceTracker();
-
-        if (proxyServiceTracker.getService() != null) {
-            if (log.isDebugEnabled()) {
-                log.debug("IProxyService is available, returning an EclipseHttpClientFactory"); //$NON-NLS-1$
-            }
-
-            return new ProxyServiceHTTPClientFactory(instanceData, proxyServiceTracker);
-        }
-
         if (log.isDebugEnabled()) {
             log.debug("IProxyService is not available, returning a LegacyHttpClientFactory"); //$NON-NLS-1$
         }

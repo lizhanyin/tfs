@@ -4,193 +4,194 @@
 package com.github.lizhanyin.tfs.client.ui.tasks;
 
 import java.net.URI;
+import java.util.concurrent.atomic.AtomicReference;
 
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import org.eclipse.jface.dialogs.ErrorDialog;
-import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.swt.widgets.Shell;
-
-import com.github.lizhanyin.tfs.runtime.IStatus;
-
-import com.github.lizhanyin.tfs.client.credentials.IdeaCredentialsManagerFactory;
-import com.github.lizhanyin.tfs.client.framework.command.ICommandExecutor;
-import com.github.lizhanyin.tfs.client.framework.command.ThreadedCancellableCommand;
-import com.github.lizhanyin.tfs.client.framework.status.TeamExplorerStatus;
 import com.github.lizhanyin.tfs.client.Messages;
-import com.github.lizhanyin.tfs.client.ui.commands.ConnectCommand;
-import com.github.lizhanyin.tfs.client.ui.dialogs.connect.CredentialsDialog;
-import com.github.lizhanyin.tfs.client.ui.framework.command.UICommandExecutorFactory;
-import com.github.lizhanyin.tfs.client.ui.framework.command.UICommandFinishedCallbackFactory;
+import com.github.lizhanyin.tfs.client.credentials.IdeaCredentialsManagerFactory;
+import com.github.lizhanyin.tfs.client.framework.command.ThreadedCancellableCommand;
 import com.github.lizhanyin.tfs.client.framework.helper.UIHelpers;
-
-import com.microsoft.tfs.core.TFSConnection;
+import com.github.lizhanyin.tfs.client.framework.status.TeamExplorerStatus;
+import com.github.lizhanyin.tfs.runtime.IStatus;
+import com.github.lizhanyin.tfs.runtime.Status;
+import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.project.Project;
 import com.microsoft.tfs.core.config.persistence.DefaultPersistenceStoreProvider;
 import com.microsoft.tfs.core.credentials.CachedCredentials;
-import com.microsoft.tfs.core.credentials.CredentialsManagerFactory;
-import com.microsoft.tfs.core.exceptions.TFSUnauthorizedException;
-import com.microsoft.tfs.core.httpclient.Credentials;
 import com.microsoft.tfs.core.httpclient.DefaultNTCredentials;
-import com.microsoft.tfs.core.util.CredentialsUtils;
-import com.microsoft.tfs.core.ws.runtime.exceptions.TransportRequestHandlerCanceledException;
-import com.microsoft.tfs.util.Check;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import com.github.lizhanyin.tfs.client.ui.commands.ConnectCommand;
+import com.github.lizhanyin.tfs.settings.TfsServerConfiguration;
+import com.microsoft.tfs.core.TFSConnection;
+import com.microsoft.tfs.core.httpclient.Credentials;
+import com.microsoft.tfs.core.httpclient.UsernamePasswordCredentials;
 
 /**
- * Abstract base class that connects to a server.
+ * Base class for connection tasks that connect to TFS servers.
+ *
+ * This task supports two modes:
+ * 1. Direct parameters: server URI and credentials passed directly
+ * 2. From stored configuration: uses TfsServerConfiguration.ServerConfig to load credentials
  *
  * @threadsafety unknown
  */
-public abstract class ConnectTask extends BaseTask {
-    private static final Log log = LogFactory.getLog(ConnectTask.class);
+public abstract class ConnectTask extends BaseTask  {
+    private static final Logger LOG = Logger.getInstance(ConnectTask.class);
 
-    private final URI serverURI;
-    private Credentials credentials;
+    protected final URI serverURI;
+    protected final TfsServerConfiguration.ServerConfig serverConfig;
+    protected Credentials credentials;
 
-    private TFSConnection connection;
-
-    private boolean showErrorDialog = true;
+    private final AtomicReference<TFSConnection> connectionRef = new AtomicReference<>();
+    private volatile String errorMessage;
 
     /**
      * Connects to the given server URI.
      *
-     * @param shell
-     *        a valid {@link Shell}
-     * @param URI
+     * @param project
+     *        a valid {@link Project}
+     * @param serverURI
      *        the server URI to connect to
      */
-    public ConnectTask(final Shell shell, final URI serverURI) {
-        this(shell, serverURI, null);
+    public ConnectTask(@Nullable final Project project, final URI serverURI) {
+        this(project, serverURI, null);
     }
 
+
     /**
-     * Connects to the given server URI.
+     * Creates a connect task with direct parameters.
      *
-     * @param shell
-     *        a valid {@link Shell}
-     * @param URI
-     *        the server URI to connect to
-     * @param credentials
-     *        the credentials to connect with (or <code>null</code>)
+     * @param project the IDEA project (may be null)
+     * @param serverURI the server URI to connect to
+     * @param credentials the credentials to use (may be null for default credentials)
      */
-    public ConnectTask(final Shell shell, final URI serverURI, final Credentials credentials) {
-        super(shell);
-
-        Check.notNull(serverURI, "serverURI"); //$NON-NLS-1$
-
+    protected ConnectTask(@Nullable final Project project, @NotNull final URI serverURI, @Nullable final Credentials credentials) {
+        super(project);
         this.serverURI = serverURI;
         this.credentials = credentials;
-
-        setCommandExecutor(getNoErrorDialogCommandExecutor(shell));
-    }
-
-    private static ICommandExecutor getNoErrorDialogCommandExecutor(final Shell shell) {
-        final ICommandExecutor noErrorDialogCommandExecutor = UICommandExecutorFactory.newUICommandExecutor(shell);
-        noErrorDialogCommandExecutor.setCommandFinishedCallback(
-            UICommandFinishedCallbackFactory.getDefaultNoErrorDialogCallback());
-
-        return noErrorDialogCommandExecutor;
-    }
-
-    public void setShowErrorDialog(final boolean showErrorDialog) {
-        this.showErrorDialog = showErrorDialog;
+        this.serverConfig = null;
     }
 
     /**
-     * {@inheritDoc}
+     * Creates a connect task from stored server configuration.
+     * Credentials will be loaded from the configuration.
+     *
+     * @param project the IDEA project (may be null)
+     * @param serverConfig the server configuration containing URL and credentials
      */
+    protected ConnectTask(@Nullable final Project project, @NotNull final TfsServerConfiguration.ServerConfig serverConfig) {
+        super(project);
+        this.serverURI = parseUri(serverConfig.getUrl());
+        this.credentials = createCredentialsFromConfig(serverConfig);
+        this.serverConfig = serverConfig;
+    }
+
     @Override
     public IStatus run() {
         /* Try to get some credentials */
         if (credentials == null) {
             final CachedCredentials cachedCredentials = IdeaCredentialsManagerFactory.getCredentialsManager(
-                DefaultPersistenceStoreProvider.INSTANCE).getCredentials(serverURI);
+                    DefaultPersistenceStoreProvider.INSTANCE).getCredentials(serverURI);
 
             // try to use DefaultNTCredentials when no credentials acquired
             credentials = cachedCredentials != null ? cachedCredentials.toCredentials() : new DefaultNTCredentials();
         }
 
-        /*
-         * We may have stored credentials that are not complete - if so, prompt.
-         */
-        if (credentials == null || CredentialsUtils.needsPassword(credentials)) {
-            final CredentialsDialog credentialsDialog = new CredentialsDialog(getShell(), serverURI);
-            credentialsDialog.setCredentials(credentials);
-            credentialsDialog.setAllowSavePassword(
-                CredentialsManagerFactory.getCredentialsManager(DefaultPersistenceStoreProvider.INSTANCE).canWrite());
-
-            if (UIHelpers.openOnUIThread(credentialsDialog) != IDialogConstants.OK_ID) {
-                return Status.CANCEL_STATUS;
-            }
-
-            credentials = credentialsDialog.getCredentials();
-        }
 
         IStatus status = Status.CANCEL_STATUS;
 
-        while (connection == null) {
-            final ConnectCommand connectCommand = getConnectCommand(serverURI, credentials);
+        final ConnectCommand connectCommand = getConnectCommand(serverURI, credentials);
 
-            status = getCommandExecutor().execute(new ThreadedCancellableCommand(connectCommand));
+        status = getCommandExecutor().execute(new ThreadedCancellableCommand(connectCommand));
 
-            connectCommandFinished(connectCommand);
+        connectCommandFinished(connectCommand);
 
-            if (status.isOK()) {
-                connection = connectCommand.getConnection();
-                break;
-            } else if (status.getSeverity() != IStatus.CANCEL) {
-                /* See if we can get an Exception out of the error. */
-                final Throwable exception = (status instanceof TeamExplorerStatus)
-                    ? ((TeamExplorerStatus) status).getTeamExplorerException() : null;
-
-                /* On unauthorized exceptions, prompt for the password again */
-                if (exception != null && (exception instanceof TFSUnauthorizedException)) {
-                    final CredentialsDialog credentialsDialog = new CredentialsDialog(getShell(), serverURI);
-                    credentialsDialog.setErrorMessage(exception.getLocalizedMessage());
-                    credentialsDialog.setCredentials(credentials);
-                    credentialsDialog.setAllowSavePassword(
-                        CredentialsManagerFactory.getCredentialsManager(
-                            DefaultPersistenceStoreProvider.INSTANCE).canWrite());
-
-                    if (UIHelpers.openOnUIThread(credentialsDialog) == IDialogConstants.OK_ID) {
-                        credentials = credentialsDialog.getCredentials();
-                        continue;
-                    }
-                } else if (exception != null && exception instanceof TransportRequestHandlerCanceledException) {
-                    // User canceled; ignore exception
-                } else if (showErrorDialog) {
-                    if (exception != null) {
-                        log.warn("Unexpected connection exception", exception); //$NON-NLS-1$
-                    }
-
-                    final IStatus errorStatus = status;
-
-                    UIHelpers.runOnUIThread(false, new Runnable() {
-                        @Override
-                        public void run() {
-                            ErrorDialog.openError(
-                                getShell(),
-                                Messages.getString("TeamProjectSelectControl.ConnectionFailedDialogTitle"), //$NON-NLS-1$
-                                null,
-                                errorStatus);
-                        }
-                    });
-                }
-            }
-
-            break;
+        if (status.isOK()) {
+            connectionRef.set(connectCommand.getConnection());
+            status = Status.OK_STATUS;
         }
 
         return status;
     }
 
-    protected abstract ConnectCommand getConnectCommand(final URI serverURI, final Credentials credentials);
-
     protected void connectCommandFinished(final ConnectCommand connectCommand) {
     }
 
+    /**
+     * Gets the connect command to execute.
+     *
+     * @param serverURI the server URI
+     * @param credentials the credentials (may be null)
+     * @return the connect command to execute
+     */
+    protected abstract ConnectCommand getConnectCommand(URI serverURI, @Nullable Credentials credentials);
+
+    /**
+     * Gets the connection result.
+     *
+     * @return the TFS connection, or null if connection failed
+     */
+    @Nullable
     public TFSConnection getConnection() {
-        return connection;
+        return connectionRef.get();
+    }
+
+    /**
+     * Gets the error message if connection failed.
+     *
+     * @return the error message, or null if no error
+     */
+    @Nullable
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    /**
+     * Gets the server URI being connected to.
+     *
+     * @return the server URI
+     */
+    @NotNull
+    public URI getServerURI() {
+        return serverURI;
+    }
+
+    /**
+     * Parses a URL string to URI.
+     *
+     * @param url the URL string
+     * @return the URI
+     * @throws IllegalArgumentException if URL is invalid
+     */
+    @NotNull
+    protected static URI parseUri(@NotNull final String url) {
+        return URI.create(url);
+    }
+
+    /**
+     * Creates credentials from server configuration.
+     *
+     * @param config the server configuration
+     * @return the credentials, or null for default NTLM credentials
+     */
+    @Nullable
+    protected static Credentials createCredentialsFromConfig(@NotNull final TfsServerConfiguration.ServerConfig config) {
+        final String authType = config.getAuthType();
+        final String username = config.getUsername();
+        final String password = config.getPassword();
+
+        if (password == null || password.isEmpty()) {
+            // No password, use default NTLM credentials
+            return null;
+        }
+
+        // Use username/password credentials
+        if (username != null && !username.isEmpty()) {
+            return new UsernamePasswordCredentials(username, password);
+        }
+
+        // PAT authentication - username is empty, password is the token
+        return new UsernamePasswordCredentials("", password);
     }
 }

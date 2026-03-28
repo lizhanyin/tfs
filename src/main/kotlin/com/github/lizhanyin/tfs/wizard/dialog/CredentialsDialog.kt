@@ -1,5 +1,6 @@
 package com.github.lizhanyin.tfs.wizard.dialog
 
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.JBTextField
@@ -10,6 +11,7 @@ import org.jetbrains.annotations.Nullable
 import java.awt.Component
 import java.awt.Dimension
 import java.awt.FlowLayout
+import java.net.URI
 import javax.swing.*
 
 /**

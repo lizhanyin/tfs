@@ -7,13 +7,10 @@ import java.net.URI;
 
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import com.microsoft.tfs.core.TFSTeamProjectCollection;
 
 import com.github.lizhanyin.tfs.client.ui.commands.ConnectCommand;
 import com.github.lizhanyin.tfs.client.ui.commands.ConnectToConfigurationServerCommand;
-
-import com.microsoft.tfs.core.TFSTeamProjectCollection;
 import com.microsoft.tfs.core.httpclient.Credentials;
 
 /**
@@ -28,11 +25,11 @@ public class ConnectToConfigurationServerTask extends ConnectTask {
      * Connects to the given server URI.
      *
      * @param project
-     *        the IDEA {@link Project}
+     *        a valid {@link Project}
      * @param serverURI
      *        the server URI to connect to
      */
-    public ConnectToConfigurationServerTask(@NotNull final Project project, @NotNull final URI serverURI) {
+    public ConnectToConfigurationServerTask(final Project project, final URI serverURI) {
         super(project, serverURI, null);
     }
 
@@ -40,14 +37,13 @@ public class ConnectToConfigurationServerTask extends ConnectTask {
      * Connects to the given server URI.
      *
      * @param project
-     *        the IDEA {@link Project}
+     *        a valid {@link Project}
      * @param serverURI
      *        the server URI to connect to
      * @param credentials
      *        the credentials to connect with (or <code>null</code>)
      */
-    public ConnectToConfigurationServerTask(@NotNull final Project project, @NotNull final URI serverURI,
-                                            @Nullable final Credentials credentials) {
+    public ConnectToConfigurationServerTask(final Project project, final URI serverURI, final Credentials credentials) {
         super(project, serverURI, credentials);
     }
 
