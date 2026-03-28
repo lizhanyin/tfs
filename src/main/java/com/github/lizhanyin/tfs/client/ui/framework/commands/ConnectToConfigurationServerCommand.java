@@ -11,12 +11,12 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 
-import com.github.lizhanyin.tfs.client.ui.framework.commands.TFSCommand;
-import com.github.lizhanyin.tfs.client.ui.ui.Messages;
-import com.github.lizhanyin.tfs.client.ui.ui.config.UIClientConnectionAdvisor;
+
+import com.github.lizhanyin.tfs.runtime.IStatus;
+import com.github.lizhanyin.tfs.runtime.Status;
+import com.github.lizhanyin.tfs.client.ui.Messages;
+import com.github.lizhanyin.tfs.client.ui.config.UIClientConnectionAdvisor;
 
 import com.microsoft.tfs.core.TFSConfigurationServer;
 import com.microsoft.tfs.core.TFSConnection;

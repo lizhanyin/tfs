@@ -13,7 +13,6 @@ public final class CommandExceptionHandlerFactory {
         return new MultiCommandExceptionHandler(new ICommandExceptionHandler[] {
             new StandardCancellationExceptionHandler(),
             new CoreExceptionHandler(),
-            new PreviewExpiredExceptionHandler(),
             new DefaultExceptionHandler(command)
         });
     }

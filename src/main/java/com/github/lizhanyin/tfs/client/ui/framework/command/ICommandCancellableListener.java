@@ -3,6 +3,6 @@
 
 package com.github.lizhanyin.tfs.client.ui.framework.command;
 
-public interface CommandCancellableListener {
+public interface ICommandCancellableListener {
     void cancellableChanged(boolean isCancellable);
 }

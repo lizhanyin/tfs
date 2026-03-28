@@ -3,24 +3,20 @@
 
 package com.github.lizhanyin.tfs.client.ui.framework.command;
 
+import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.progress.ProcessCanceledException;
+import com.intellij.openapi.progress.ProgressIndicator;
+
 import com.microsoft.tfs.util.Check;
 import com.microsoft.tfs.util.listeners.SingleListenerFacade;
-import com.github.lizhanyin.tfs.client.ui.framework.command.CommandCancellableListener;
-import com.github.lizhanyin.tfs.client.ui.framework.command.ICancellableCommand;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.Status;
 
 import java.text.MessageFormat;
 
 public abstract class CancellableCommand implements ICommand, ICancellableCommand {
-    private static final Log log = LogFactory.getLog(CancellableCommand.class);
+    private static final Logger log = Logger.getInstance(CancellableCommand.class);
 
     private final SingleListenerFacade cancellableChangedListeners =
-        new SingleListenerFacade(CommandCancellableListener.class);
+        new SingleListenerFacade(ICommandCancellableListener.class);
 
     private boolean cancellable = false;
 
@@ -37,7 +33,7 @@ public abstract class CancellableCommand implements ICommand, ICancellableComman
         this.cancellable = cancellable;
 
         if (fireEvent) {
-            ((CommandCancellableListener) cancellableChangedListeners.getListener()).cancellableChanged(cancellable);
+            ((ICommandCancellableListener) cancellableChangedListeners.getListener()).cancellableChanged(cancellable);
         }
     }
 
@@ -58,7 +54,7 @@ public abstract class CancellableCommand implements ICommand, ICancellableComman
      *        of cancellability changes (not <code>null</code>)
      */
     @Override
-    public void addCancellableChangedListener(final CommandCancellableListener listener) {
+    public void addCancellableChangedListener(final ICommandCancellableListener listener) {
         cancellableChangedListeners.addListener(listener);
     }
 
@@ -70,34 +66,33 @@ public abstract class CancellableCommand implements ICommand, ICancellableComman
      *        of cancellability changes (not <code>null</code>)
      */
     @Override
-    public void removeCancellableChangedListener(final CommandCancellableListener listener) {
+    public void removeCancellableChangedListener(final ICommandCancellableListener listener) {
         cancellableChangedListeners.removeListener(listener);
     }
 
     /**
-     * A convenience method that subclasses can call to do one-line cancelation
-     * checks. The given {@link IProgressMonitor} is checked for cancelation. If
-     * it is canceled, a {@link CoreException} is thrown with a
-     * <code>CANCEL</code> status inside of it.
+     * A convenience method that subclasses can call to do one-line cancellation
+     * checks. The given {@link ProgressIndicator} is checked for cancellation. If
+     * it is canceled, a {@link ProcessCanceledException} is thrown.
      *
-     * @param progressMonitor
-     *        an {@link IProgressMonitor} to check for cancelation (must not be
+     * @param progressIndicator
+     *        a {@link ProgressIndicator} to check for cancellation (must not be
      *        <code>null</code>)
-     * @throws CoreException
-     *         if the given {@link IProgressMonitor} was canceled
+     * @throws ProcessCanceledException
+     *         if the given {@link ProgressIndicator} was canceled
      */
-    protected final void checkForCancellation(final IProgressMonitor progressMonitor) throws CoreException {
-        Check.notNull(progressMonitor, "progressMonitor"); //$NON-NLS-1$
+    protected final void checkForCancellation(final ProgressIndicator progressIndicator) {
+        Check.notNull(progressIndicator, "progressIndicator"); //$NON-NLS-1$
 
-        if (progressMonitor.isCanceled()) {
+        if (progressIndicator.isCanceled()) {
             if (log.isTraceEnabled()) {
                 final String messageFormat =
-                    "command [{0}] was canceled - throwing CoreException with Status.CANCEL_STATUS"; //$NON-NLS-1$
+                    "command [{0}] was canceled - throwing ProcessCanceledException"; //$NON-NLS-1$
                 final String message = MessageFormat.format(messageFormat, getClass().getName());
                 log.trace(message);
             }
 
-            throw new CoreException(Status.CANCEL_STATUS);
+            throw new ProcessCanceledException();
         }
     }
 }

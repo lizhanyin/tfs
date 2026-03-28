@@ -5,12 +5,13 @@ package com.github.lizhanyin.tfs.client.ui.tasks;
 
 import java.net.URI;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.eclipse.swt.widgets.Shell;
+import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.project.Project;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import com.github.lizhanyin.tfs.client.ui.ui.commands.ConnectCommand;
-import com.github.lizhanyin.tfs.client.ui.ui.commands.ConnectToConfigurationServerCommand;
+import com.github.lizhanyin.tfs.client.ui.framework.commands.ConnectCommand;
+import com.github.lizhanyin.tfs.client.ui.framework.commands.ConnectToConfigurationServerCommand;
 
 import com.microsoft.tfs.core.TFSTeamProjectCollection;
 import com.microsoft.tfs.core.httpclient.Credentials;
@@ -21,32 +22,33 @@ import com.microsoft.tfs.core.httpclient.Credentials;
  * @threadsafety unknown
  */
 public class ConnectToConfigurationServerTask extends ConnectTask {
-    private static final Log log = LogFactory.getLog(ConnectToConfigurationServerTask.class);
+    private static final Logger LOG = Logger.getInstance(ConnectToConfigurationServerTask.class);
 
     /**
      * Connects to the given server URI.
      *
-     * @param shell
-     *        a valid {@link Shell}
-     * @param URI
+     * @param project
+     *        the IDEA {@link Project}
+     * @param serverURI
      *        the server URI to connect to
      */
-    public ConnectToConfigurationServerTask(final Shell shell, final URI serverURI) {
-        super(shell, serverURI, null);
+    public ConnectToConfigurationServerTask(@NotNull final Project project, @NotNull final URI serverURI) {
+        super(project, serverURI, null);
     }
 
     /**
      * Connects to the given server URI.
      *
-     * @param shell
-     *        a valid {@link Shell}
-     * @param URI
+     * @param project
+     *        the IDEA {@link Project}
+     * @param serverURI
      *        the server URI to connect to
      * @param credentials
      *        the credentials to connect with (or <code>null</code>)
      */
-    public ConnectToConfigurationServerTask(final Shell shell, final URI serverURI, final Credentials credentials) {
-        super(shell, serverURI, credentials);
+    public ConnectToConfigurationServerTask(@NotNull final Project project, @NotNull final URI serverURI,
+                                            @Nullable final Credentials credentials) {
+        super(project, serverURI, credentials);
     }
 
     @Override

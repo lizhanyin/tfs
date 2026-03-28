@@ -3,9 +3,9 @@
 
 package com.github.lizhanyin.tfs.client.ui.framework.command.exception;
 
+import com.github.lizhanyin.tfs.runtime.IStatus;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.eclipse.core.runtime.IStatus;
 
 import com.microsoft.tfs.util.Check;
 

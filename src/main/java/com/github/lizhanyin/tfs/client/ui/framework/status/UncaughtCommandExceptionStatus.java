@@ -3,7 +3,7 @@
 
 package com.github.lizhanyin.tfs.client.ui.framework.status;
 
-import org.eclipse.core.runtime.Status;
+import com.github.lizhanyin.tfs.runtime.Status;
 
 /**
  * An extension of {@link Status} that exists so that clients know that the

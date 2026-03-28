@@ -3,26 +3,27 @@
 
 package com.github.lizhanyin.tfs.client.ui.tasks;
 
-import org.eclipse.swt.widgets.Shell;
+import com.github.lizhanyin.tfs.client.ui.Task;
+import com.intellij.openapi.project.Project;
 
 import com.github.lizhanyin.tfs.client.ui.framework.command.ICommandExecutor;
 import com.github.lizhanyin.tfs.client.ui.framework.command.UICommandExecutorFactory;
 import com.microsoft.tfs.util.Check;
 
 public abstract class BaseTask implements Task {
-    private final Shell shell;
+    private final Project project;
 
     private ICommandExecutor commandExecutor;
 
-    public BaseTask(final Shell shell) {
-        Check.notNull(shell, "shell"); //$NON-NLS-1$
+    public BaseTask(final Project project) {
+        Check.notNull(project, "project"); //$NON-NLS-1$
 
-        this.shell = shell;
-        commandExecutor = UICommandExecutorFactory.newUICommandExecutor(shell);
+        this.project = project;
+        commandExecutor = UICommandExecutorFactory.newUICommandExecutor(project);
     }
 
-    protected Shell getShell() {
-        return shell;
+    protected Project getProject() {
+        return project;
     }
 
     @Override

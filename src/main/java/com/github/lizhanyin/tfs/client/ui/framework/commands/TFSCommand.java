@@ -4,7 +4,7 @@
 package com.github.lizhanyin.tfs.client.ui.framework.commands;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
+import com.github.lizhanyin.tfs.runtime.IStatus;
 
 import com.github.lizhanyin.tfs.client.ui.TFSCommonClientPlugin;
 import com.github.lizhanyin.tfs.client.ui.framework.command.Command;

@@ -5,15 +5,18 @@ package com.github.lizhanyin.tfs.client.ui.tasks;
 
 import java.net.URI;
 
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
+
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.swt.widgets.Shell;
 
-import com.github.lizhanyin.tfs.client.ui.credentials.EclipseCredentialsManagerFactory;
+import com.github.lizhanyin.tfs.runtime.IStatus;
+import com.github.lizhanyin.tfs.runtime.IStatus;
+
+import com.github.lizhanyin.tfs.client.ui.credentials.IdeaCredentialsManagerFactory;
 import com.github.lizhanyin.tfs.client.ui.framework.command.ICommandExecutor;
 import com.github.lizhanyin.tfs.client.ui.framework.command.ThreadedCancellableCommand;
 import com.github.lizhanyin.tfs.client.ui.framework.status.TeamExplorerStatus;
@@ -102,7 +105,7 @@ public abstract class ConnectTask extends BaseTask {
     public IStatus run() {
         /* Try to get some credentials */
         if (credentials == null) {
-            final CachedCredentials cachedCredentials = EclipseCredentialsManagerFactory.getCredentialsManager(
+            final CachedCredentials cachedCredentials = IdeaCredentialsManagerFactory.getCredentialsManager(
                 DefaultPersistenceStoreProvider.INSTANCE).getCredentials(serverURI);
 
             // try to use DefaultNTCredentials when no credentials acquired

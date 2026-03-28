@@ -3,9 +3,9 @@
 
 package com.github.lizhanyin.tfs.client.ui.framework.command.exception;
 
-import org.eclipse.core.runtime.IStatus;
 
 import com.github.lizhanyin.tfs.client.ui.framework.command.ICommand;
+import com.github.lizhanyin.tfs.runtime.IStatus;
 
 /**
  * Static utility classes for working with {@link ICommandExceptionHandler}s.

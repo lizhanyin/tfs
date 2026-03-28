@@ -3,9 +3,8 @@
 
 package com.github.lizhanyin.tfs.client.ui.framework.command.exception;
 
-import com.github.lizhanyin.tfs.client.ui.framework.command.exception.ICommandExceptionHandler;
 
-import org.eclipse.core.runtime.IStatus;
+import com.github.lizhanyin.tfs.runtime.IStatus;
 
 /**
  * A command exception handler that can be used when no other command exception

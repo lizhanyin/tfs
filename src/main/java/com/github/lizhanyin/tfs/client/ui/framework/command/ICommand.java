@@ -3,10 +3,14 @@
 
 package com.github.lizhanyin.tfs.client.ui.framework.command;
 
+import com.github.lizhanyin.tfs.client.ui.framework.command.exception.ICommandExceptionHandler;
 import com.intellij.openapi.progress.ProgressIndicator;
 
 import com.github.lizhanyin.tfs.client.ui.framework.command.Command;
 import com.github.lizhanyin.tfs.client.ui.framework.command.ICommandExecutor ;
+import com.github.lizhanyin.tfs.runtime.IStatus;
+import com.github.lizhanyin.tfs.runtime.Status;
+import com.github.lizhanyin.tfs.runtime.OperationCanceledException;
 
 /**
  * <p>
@@ -42,25 +46,32 @@ public interface ICommand {
      * </p>
      *
      * <p>
-     * The <code>progressIndicator</code> argument, if not <code>null</code>,
+     * The <code>progressMonitor</code> argument, if not <code>null</code>,
      * should be used to report the progress of this command as it runs. Callers
-     * of this method are <b>not</b> required to supply a progress indicator.
+     * of this method are <b>not</b> required to supply a progress monitor.
      * {@link ICommand} implementations <b>must not</b> expect the
-     * <code>progressIndicator</code> argument to be non-<code>null</code>.
+     * <code>progressMonitor</code> argument to be non-<code>null</code>.
      * However, if the argument is non-<code>null</code>, the command should
-     * ideally make use of the supplied progress indicator.
+     * ideally make use of the supplied progress monitor.
      * </p>
      *
      * <p>
-     * This method returns a boolean to indicate success or failure.
-     * Returns <code>true</code> if the command completed successfully,
-     * <code>false</code> otherwise.
+     * This methods returns an {@link IStatus} to allow the command to report
+     * its outcome to callers of this method. It is perfectly acceptable for a
+     * command that successfully runs to return <code>null</code> as a status.
+     * In that case, clients should interpret null to indicate that the command
+     * had nothing interesting to report, and are allowed to treat a
+     * <code>null</code> return value the same as {@link Status#OK_STATUS}.
      * </p>
      *
      * <p>
      * If a command returns early because it has been cancelled (either through
-     * the supplied {@link ProgressIndicator} or through some other means) it
-     * should throw {@link com.intellij.openapi.progress.ProcessCanceledException}.
+     * the supplied {@link IProgressMonitor} or through some other means) it
+     * should indicate this cancellation in some way. Commonly, canceled
+     * commands will return an {@link IStatus} with a severity of
+     * {@link IStatus#CANCEL}. A command can also indicate cancellation by
+     * throwing {@link OperationCanceledException} or by some other way that is
+     * defined by the command implementation.
      * </p>
      *
      * <p>
@@ -68,21 +79,18 @@ public interface ICommand {
      * decide how such exceptions should be handled.
      * </p>
      *
-     * @param progressIndicator
-     *        an optional {@link ProgressIndicator} for the command to use
-     * @return <code>true</code> if the command completed successfully
+     * @param progressMonitor
+     *        an optional {@link IProgressMonitor} for the command to use
+     * @return an {@link IStatus} as described above
      * @throws Exception
-     *         if an error occurs during execution
-     * @throws com.intellij.openapi.progress.ProcessCanceledException
-     *         if the command was cancelled
      */
-    boolean run(ProgressIndicator progressIndicator) throws Exception;
+    public IStatus run(IProgressMonitor progressMonitor) throws Exception;
 
     /**
      * <p>
-     * Called to determine whether or not this {@link ICommand} is cancellable.
-     * An {@link ICommand} is considered cancellable if it checks the
-     * <code>isCanceled()</code> property of its {@link ProgressIndicator} when
+     * Called to determine whether or not this {@link ICommand} is cancelable.
+     * An {@link ICommand} is considered cancelable if it checks the
+     * <code>isCanceled()</code> property of its {@link IProgressMonitor} when
      * run and returns early if <code>isCanceled()</code> returns
      * <code>true</code>.
      * </p>
@@ -95,10 +103,10 @@ public interface ICommand {
      * of such a cancel button.
      * </p>
      *
-     * @return <code>true</code> if this {@link ICommand} is cancellable as
+     * @return <code>true</code> if this {@link ICommand} is cancelable as
      *         described above
      */
-    boolean isCancellable();
+    public boolean isCancellable();
 
     /**
      * Called to obtain an end user readable name for this {@link ICommand}. For
@@ -108,7 +116,7 @@ public interface ICommand {
      * @return a descriptive name for this {@link ICommand} (must not be
      *         <code>null</code>)
      */
-    String getName();
+    public String getName();
 
     /**
      * Called to obtain an "error description" which is used if this command
@@ -117,7 +125,7 @@ public interface ICommand {
      * @return a descriptive name for the error case of this {@link ICommand}
      *         (must not be <code>null</code>)
      */
-    String getErrorDescription();
+    public String getErrorDescription();
 
     /**
      * Called to obtain a "logging description" which is logged to the product
@@ -127,5 +135,29 @@ public interface ICommand {
      * @return a descriptive piece of information for the log (or
      *         <code>null</code>)
      */
-    String getLoggingDescription();
+    public String getLoggingDescription();
+
+    /**
+     * <p>
+     * Obtains an optional {@link ICommandExceptionHandler} for use in handling
+     * exceptions thrown by this command.
+     * </p>
+     *
+     * <p>
+     * Typically, commands will supply an {@link ICommandExceptionHandler} to
+     * have control over how specific types of exceptions that could be thrown
+     * by the {@link #run(IProgressMonitor)} method should be handled. If the
+     * command does not wish to supply an exception handler, it returns
+     * <code>null</code> from this method. Higher-level code that is running a
+     * command should generally respect a command's exception handler if it has
+     * one and use it before a more general exception handler.
+     * </p>
+     *
+     * @see ICommandExceptionHandler
+     *
+     * @return an {@link ICommandExceptionHandler} for this command or
+     *         <code>null</code> if this command does not supply an exception
+     *         handler
+     */
+    public ICommandExceptionHandler getExceptionHandler();
 }

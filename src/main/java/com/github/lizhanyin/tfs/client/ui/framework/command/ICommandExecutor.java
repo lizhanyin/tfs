@@ -4,7 +4,7 @@
 package com.github.lizhanyin.tfs.client.ui.framework.command;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
+import com.github.lizhanyin.tfs.runtime.IStatus;
 
 import com.github.lizhanyin.tfs.client.ui.framework.command.exception.CommandExceptionHandlerFactory;
 import com.github.lizhanyin.tfs.client.ui.framework.command.exception.ICommandExceptionHandler;
@@ -73,13 +73,12 @@ import com.github.lizhanyin.tfs.client.ui.framework.command.exception.ICommandEx
  * {@link ICommandExceptionHandler} returned by calling
  * {@link ICommand#getExceptionHandler()}. If this handler is <code>null</code>
  * or does not handle the thrown exception, the executor will then use the
- * exception handler returned by {@link CommandExceptionHandlerFactory#DEFAULT}.
+ * exception handler returned by {@link CommandExceptionHandlerFactory}.
  * </p>
  *
  * @see ICommand
  * @see ICommandExceptionHandler
  * @see FutureStatus
- * @see CommandExecutorFactory
  */
 public interface ICommandExecutor {
     /**

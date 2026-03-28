@@ -3,8 +3,9 @@
 
 package com.github.lizhanyin.tfs.client.ui.framework.status;
 
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
+
+import com.github.lizhanyin.tfs.runtime.IStatus;
+import com.github.lizhanyin.tfs.runtime.Status;
 
 /**
  * Exists as a bridge for command exceptions to be handled better in the UI. We
