@@ -6,7 +6,7 @@ package com.github.lizhanyin.tfs.client.ui.tasks;
 import com.github.lizhanyin.tfs.client.ui.Task;
 import com.intellij.openapi.project.Project;
 
-import com.github.lizhanyin.tfs.client.ui.framework.command.ICommandExecutor;
+import com.github.lizhanyin.tfs.client.framework.command.ICommandExecutor;
 import com.github.lizhanyin.tfs.client.ui.framework.command.UICommandExecutorFactory;
 import com.microsoft.tfs.util.Check;
 

@@ -3,24 +3,24 @@
 
 package com.github.lizhanyin.tfs.client.ui.framework.command;
 
-import org.eclipse.swt.widgets.Shell;
-
-import com.microsoft.tfs.client.common.ui.framework.helper.ShellUtils;
-import com.microsoft.tfs.util.Check;
+import com.github.lizhanyin.tfs.client.framework.command.CommandFinishedCallbackFactory;
+import com.github.lizhanyin.tfs.client.framework.command.ICommandFinishedCallback;
+import com.github.lizhanyin.tfs.client.framework.command.MultiCommandFinishedCallback;
+import com.intellij.openapi.project.Project;
 
 public class UICommandFinishedCallbackFactory extends CommandFinishedCallbackFactory {
     protected UICommandFinishedCallbackFactory() {
     }
 
     /**
-     * This will attempt to derive the shell from the current context. It is
-     * recommended instead that you use {@link #getDefaultCallback(Shell)}
+     * This will attempt to derive the project from the current context. It is
+     * recommended instead that you use {@link #getDefaultCallback(Project)}
      * instead.
      *
      * @return A command finished callback that does not participate in UI.
      */
     public static ICommandFinishedCallback getDefaultCallback() {
-        return getDefaultCallback(ShellUtils.getWorkbenchShell());
+        return getDefaultCallback((Project) null);
     }
 
     /**
@@ -29,12 +29,12 @@ public class UICommandFinishedCallbackFactory extends CommandFinishedCallbackFac
      *
      * @return A command finished callback that participates in UI.
      */
-    public static ICommandFinishedCallback getDefaultCallback(final Shell shell) {
+    public static ICommandFinishedCallback getDefaultCallback(final Project project) {
         /* Make sure to include the default non-UI callbacks */
         final ICommandFinishedCallback nonUiCallbacks = CommandFinishedCallbackFactory.getDefaultCallback();
 
         final ICommandFinishedCallback uiCallbacks =
-            MultiCommandFinishedCallback.combine(getConsoleWriterCallback(), getErrorDialogCallback(shell));
+            MultiCommandFinishedCallback.combine(getConsoleWriterCallback(), getErrorDialogCallback(project));
 
         return MultiCommandFinishedCallback.combine(nonUiCallbacks, uiCallbacks);
     }
@@ -52,9 +52,7 @@ public class UICommandFinishedCallbackFactory extends CommandFinishedCallbackFac
         return new ConsoleWriterCommandFinishedCallback();
     }
 
-    public static final ICommandFinishedCallback getErrorDialogCallback(final Shell shell) {
-        Check.notNull(shell, "shell"); //$NON-NLS-1$
-
-        return new ErrorDialogCommandFinishedCallback(shell);
+    public static final ICommandFinishedCallback getErrorDialogCallback(final Project project) {
+        return new ErrorDialogCommandFinishedCallback(project);
     }
 }

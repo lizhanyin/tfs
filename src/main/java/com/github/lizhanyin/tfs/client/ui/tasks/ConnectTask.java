@@ -14,18 +14,17 @@ import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.swt.widgets.Shell;
 
 import com.github.lizhanyin.tfs.runtime.IStatus;
-import com.github.lizhanyin.tfs.runtime.IStatus;
 
-import com.github.lizhanyin.tfs.client.ui.credentials.IdeaCredentialsManagerFactory;
-import com.github.lizhanyin.tfs.client.ui.framework.command.ICommandExecutor;
-import com.github.lizhanyin.tfs.client.ui.framework.command.ThreadedCancellableCommand;
-import com.github.lizhanyin.tfs.client.ui.framework.status.TeamExplorerStatus;
-import com.github.lizhanyin.tfs.client.ui.Messages;
-import com.github.lizhanyin.tfs.client.ui.framework.commands.ConnectCommand;
+import com.github.lizhanyin.tfs.client.credentials.IdeaCredentialsManagerFactory;
+import com.github.lizhanyin.tfs.client.framework.command.ICommandExecutor;
+import com.github.lizhanyin.tfs.client.framework.command.ThreadedCancellableCommand;
+import com.github.lizhanyin.tfs.client.framework.status.TeamExplorerStatus;
+import com.github.lizhanyin.tfs.client.Messages;
+import com.github.lizhanyin.tfs.client.ui.commands.ConnectCommand;
 import com.github.lizhanyin.tfs.client.ui.dialogs.connect.CredentialsDialog;
 import com.github.lizhanyin.tfs.client.ui.framework.command.UICommandExecutorFactory;
 import com.github.lizhanyin.tfs.client.ui.framework.command.UICommandFinishedCallbackFactory;
-import com.github.lizhanyin.tfs.client.ui.framework.helper.UIHelpers;
+import com.github.lizhanyin.tfs.client.framework.helper.UIHelpers;
 
 import com.microsoft.tfs.core.TFSConnection;
 import com.microsoft.tfs.core.config.persistence.DefaultPersistenceStoreProvider;

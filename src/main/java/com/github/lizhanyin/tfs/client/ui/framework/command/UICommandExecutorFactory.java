@@ -3,13 +3,13 @@
 
 package com.github.lizhanyin.tfs.client.ui.framework.command;
 
+import com.github.lizhanyin.tfs.client.framework.command.ICommandExecutor;
+import com.github.lizhanyin.tfs.client.framework.command.JobOptions;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.wizard.IWizardContainer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
-import com.github.lizhanyin.tfs.client.ui.framework.command.ICommandExecutor;
-import com.github.lizhanyin.tfs.client.ui.framework.command.JobOptions;
 import com.github.lizhanyin.tfs.client.ui.framework.command.ThreadCommandExecutor;
 
 /**

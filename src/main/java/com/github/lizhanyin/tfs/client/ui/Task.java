@@ -3,7 +3,7 @@
 
 package com.github.lizhanyin.tfs.client.ui;
 
-import com.github.lizhanyin.tfs.client.ui.framework.command.ICommandExecutor;
+import com.github.lizhanyin.tfs.client.framework.command.ICommandExecutor;
 import com.github.lizhanyin.tfs.runtime.IStatus ;
 
 public interface Task {

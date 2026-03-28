@@ -10,8 +10,8 @@ import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import com.github.lizhanyin.tfs.client.ui.framework.commands.ConnectCommand;
-import com.github.lizhanyin.tfs.client.ui.framework.commands.ConnectToConfigurationServerCommand;
+import com.github.lizhanyin.tfs.client.ui.commands.ConnectCommand;
+import com.github.lizhanyin.tfs.client.ui.commands.ConnectToConfigurationServerCommand;
 
 import com.microsoft.tfs.core.TFSTeamProjectCollection;
 import com.microsoft.tfs.core.httpclient.Credentials;

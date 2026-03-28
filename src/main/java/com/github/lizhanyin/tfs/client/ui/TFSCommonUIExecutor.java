@@ -5,7 +5,7 @@ package com.github.lizhanyin.tfs.client.ui;
 
 import java.util.concurrent.Executor;
 
-import com.github.lizhanyin.tfs.client.ui.framework.helper.UIHelpers;
+import com.github.lizhanyin.tfs.client.framework.helper.UIHelpers;
 import org.jetbrains.annotations.NotNull;
 
 /**
