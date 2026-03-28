@@ -4,12 +4,11 @@
 package com.github.lizhanyin.tfs.client.framework.command;
 
 import java.text.MessageFormat;
-import java.util.concurrent.CountDownLatch;
 
 import com.github.lizhanyin.tfs.client.util.ExtensionLoader;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.progress.Task;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * An {@link IAsyncObjectWaiter} that will proxy to an implementation provided
@@ -24,18 +23,18 @@ import com.intellij.openapi.progress.Task;
  * @threadsafety thread-safe
  */
 public class ExtensionPointAsyncObjectWaiter implements IAsyncObjectWaiter {
-    public static final String EXTENSION_POINT_ID = "com.microsoft.tfs.client.common.asyncObjectWaiter"; //$NON-NLS-1$
+    public static final String EXTENSION_POINT_ID = "com.github.lizhanyin.tfs.asyncObjectWaiter"; //$NON-NLS-1$
 
-    private static final Log log = LogFactory.getLog(ExtensionPointAsyncObjectWaiter.class);
+    private static final Logger log = Logger.getInstance(ExtensionPointAsyncObjectWaiter.class);
 
     private static final Object extensionLock = new Object();
-    private static IAsyncObjectWaiter extension;
+    private static volatile IAsyncObjectWaiter extension;
 
     public ExtensionPointAsyncObjectWaiter() {
     }
 
     @Override
-    public void joinThread(final Thread thread) throws InterruptedException {
+    public void joinThread(@NotNull final Thread thread) throws InterruptedException {
         final IAsyncObjectWaiter e = getExtension();
         if (e != null) {
             e.joinThread(thread);
@@ -45,7 +44,7 @@ public class ExtensionPointAsyncObjectWaiter implements IAsyncObjectWaiter {
     }
 
     @Override
-    public void joinTask(final Task task) throws InterruptedException {
+    public void joinTask(@NotNull final Task task) throws InterruptedException {
         final IAsyncObjectWaiter e = getExtension();
         if (e != null) {
             e.joinTask(task);
@@ -70,7 +69,7 @@ public class ExtensionPointAsyncObjectWaiter implements IAsyncObjectWaiter {
     }
 
     @Override
-    public void waitUntilTrue(final Predicate predicate) throws InterruptedException {
+    public void waitUntilTrue(@NotNull final Predicate predicate) throws InterruptedException {
         final IAsyncObjectWaiter e = getExtension();
         if (e != null) {
             e.waitUntilTrue(predicate);
@@ -82,19 +81,25 @@ public class ExtensionPointAsyncObjectWaiter implements IAsyncObjectWaiter {
     }
 
     private static IAsyncObjectWaiter getExtension() {
-        synchronized (extensionLock) {
-            if (extension == null) {
-                extension = (IAsyncObjectWaiter) ExtensionLoader.loadSingleExtensionClass(EXTENSION_POINT_ID, false);
-
+        if (extension == null) {
+            synchronized (extensionLock) {
                 if (extension == null) {
-                    log.debug(
-                        MessageFormat.format(
-                            "No IAsyncObjectWaiter at extension point {0}, using simple implementation", //$NON-NLS-1$
-                            EXTENSION_POINT_ID));
+                    final Object provider = ExtensionLoader.loadSingleExtensionClass(EXTENSION_POINT_ID, false);
+
+                    if (provider instanceof IAsyncObjectWaiter) {
+                        extension = (IAsyncObjectWaiter) provider;
+                    }
+
+                    if (extension == null) {
+                        log.debug(
+                            MessageFormat.format(
+                                "No IAsyncObjectWaiter at extension point {0}, using simple implementation", //$NON-NLS-1$
+                                EXTENSION_POINT_ID));
+                    }
                 }
             }
-
-            return extension;
         }
+
+        return extension;
     }
 }
