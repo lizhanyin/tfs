@@ -23,7 +23,7 @@ public class CommandFinishedCallbackFactory {
      * @return An {@link ICommandFinishedCallback} that will log to the platform
      *         log.
      */
-    public static final ICommandFinishedCallback getPlatformLogCallback() {
+    public static ICommandFinishedCallback getPlatformLogCallback() {
         return new PlatformLogCommandFinishedCallback();
     }
 
@@ -34,7 +34,7 @@ public class CommandFinishedCallbackFactory {
      * @return An {@link ICommandFinishedCallback} that will log to the Team
      *         Explorer log.
      */
-    public static final ICommandFinishedCallback getTeamExplorerLogCallback() {
+    public static ICommandFinishedCallback getTeamExplorerLogCallback() {
         return new TeamExplorerLogCommandFinishedCallback();
     }
 }

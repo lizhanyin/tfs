@@ -28,7 +28,7 @@ import com.github.lizhanyin.tfs.runtime.Status;
  * An important feature of this extension to {@link JobCommandExecutor} is its
  * ability to process UI thread messages while waiting for a task to finish, when
  * the thread waiting on the task is the UI thread (see the implementation in
- * {@link UIJobFutureStatus}). The base class, {@link JobCommandExecutor}, does
+ * { @link UIJobFutureStatus}). The base class, {@link JobCommandExecutor}, does
  * not offer this feature. It waits with a simple blocking join
  * which prevents the running {@link Task.Backgroundable} from doing work on the UI thread.
  * </p>

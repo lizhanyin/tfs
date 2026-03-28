@@ -11,7 +11,7 @@ import com.github.lizhanyin.tfs.client.framework.command.Command;
 import com.github.lizhanyin.tfs.client.framework.command.CommandInitializationRunnable;
 import com.github.lizhanyin.tfs.client.framework.command.exception.ICommandExceptionHandler;
 import com.github.lizhanyin.tfs.client.framework.status.TeamExplorerStatus;
-import com.github.lizhanyin.tfs.client.ui.util.ProgressMonitorTaskMonitorAdapter;
+import com.github.lizhanyin.tfs.client.util.ProgressMonitorTaskMonitorAdapter;
 import com.microsoft.tfs.core.exceptions.TECoreException;
 import com.microsoft.tfs.core.httpclient.ActiveHttpMethods;
 import com.microsoft.tfs.util.tasks.TaskMonitor;

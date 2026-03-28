@@ -121,7 +121,7 @@ public class CommandExecutor implements ICommandExecutor {
      * Called by the {@link #execute(ICommand)} method to get an
      * {@link ICommandStartedCallback}. Subclasses can override and return a
      * different {@link ICommandStartedCallback}, but should usually use
-     * {@link MultiCommandStartedCallback} and compose their custom callback
+     *
      * with the callback returned by this base class.
      *
      * @return an {@link ICommandStartedCallback} as described above

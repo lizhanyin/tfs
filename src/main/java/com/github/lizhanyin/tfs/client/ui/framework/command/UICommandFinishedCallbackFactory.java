@@ -48,11 +48,11 @@ public class UICommandFinishedCallbackFactory extends CommandFinishedCallbackFac
         return MultiCommandFinishedCallback.combine(nonUiCallbacks, uiCallbacks);
     }
 
-    public static final ICommandFinishedCallback getConsoleWriterCallback() {
+    public static ICommandFinishedCallback getConsoleWriterCallback() {
         return new ConsoleWriterCommandFinishedCallback();
     }
 
-    public static final ICommandFinishedCallback getErrorDialogCallback(final Project project) {
+    public static ICommandFinishedCallback getErrorDialogCallback(final Project project) {
         return new ErrorDialogCommandFinishedCallback(project);
     }
 }

@@ -24,9 +24,9 @@ public interface ICommandFinishedCallback {
      * Called after a command has finished being executed, and an
      * {@link IStatus} has been produced. The {@link IStatus} given here is
      * either returned by
-     * {@link ICommand#run(org.eclipse.core.runtime.IProgressMonitor)} or is
+     * {@link ICommand#run(com.intellij.openapi.progress.ProgressIndicator)} or is
      * produced by converting an exception thrown by
-     * {@link ICommand#run(org.eclipse.core.runtime.IProgressMonitor)} into an
+     * {@link ICommand#run(com.intellij.openapi.progress.ProgressIndicator)} into an
      * {@link IStatus} by using an {@link ICommandExceptionHandler}.
      *
      * @param command

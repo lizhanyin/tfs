@@ -5,12 +5,12 @@ package com.github.lizhanyin.tfs.client.ui.framework.command;
 
 import com.github.lizhanyin.tfs.client.framework.command.ICommandExecutor;
 import com.github.lizhanyin.tfs.client.framework.command.JobOptions;
-import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.jface.wizard.IWizardContainer;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Shell;
+import com.github.lizhanyin.tfs.client.framework.command.ThreadCommandExecutor;
+import com.intellij.openapi.progress.Task;
+import com.intellij.openapi.project.Project;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import com.github.lizhanyin.tfs.client.ui.framework.command.ThreadCommandExecutor;
 
 /**
  * <p>
@@ -37,102 +37,45 @@ import com.github.lizhanyin.tfs.client.ui.framework.command.ThreadCommandExecuto
 public class UICommandExecutorFactory {
     /**
      * Creates a new asynchronous {@link ICommandExecutor} that makes use of the
-     * Eclipse job framework and can process UI thread messages while waiting
-     * for jobs to finish.
+     * IntelliJ IDEA task framework and can process UI thread messages while waiting
+     * for tasks to finish.
      *
+     * @param project
+     *        the IntelliJ {@link Project} (must not be <code>null</code>)
      * @return a new {@link ICommandExecutor} as described above
      */
-    public static ICommandExecutor newUIJobCommandExecutor(final Shell shell) {
-        return new UIJobCommandExecutor(shell);
+    public static ICommandExecutor newUIJobCommandExecutor(@NotNull final Project project) {
+        return new UIJobCommandExecutor(project);
     }
 
     /**
      * <p>
      * Creates a new asynchronous {@link ICommandExecutor} that makes use of the
-     * Eclipse job framework and can process UI thread messages while waiting
-     * for jobs to. Certain attributes of the {@link Job}s that are created by
-     * the executor can be controlled through the specified {@link JobOptions}
-     * parameter.
+     * IntelliJ IDEA task framework and can process UI thread messages while waiting
+     * for tasks to finish. Certain attributes of the {@link Task.Backgroundable}s
+     * that are created by the executor can be controlled through the specified
+     * {@link JobOptions} parameter.
      * </p>
      *
      * <p>
-     * Note that no reference is held to the give {@link JobOptions} object
+     * Note that no reference is held to the given {@link JobOptions} object
      * after this method returns. This means that any changes made to the
      * {@link JobOptions} after calling this method will not impact the returned
      * executor.
      * </p>
      *
+     * @param project
+     *        the IntelliJ {@link Project} (must not be <code>null</code>)
      * @param jobOptions
      *        a {@link JobOptions} instance containing values used to configure
-     *        new {@link Job}s, or <code>null</code> to use default
+     *        new {@link Task.Backgroundable}s, or <code>null</code> to use default
      *        configuration
      * @return a new {@link ICommandExecutor} as described above
      */
-    public static ICommandExecutor newUIJobCommandExecutor(final Shell shell, final JobOptions jobOptions) {
-        return new UIJobCommandExecutor(shell, jobOptions);
-    }
-
-    /**
-     * Creates a new {@link ICommandExecutor} that is suitable for use in
-     * general UI scenarios. The executor will execute commands invisibly for a
-     * short period of time, and then show a modal dialog that reports on the
-     * progress of the command and allows the user to cancel.
-     *
-     * @param shell
-     *        a parent {@link Shell} (must not be <code>null</code>)
-     * @return a new {@link ICommandExecutor} as described above
-     */
-    public static ICommandExecutor newUICommandExecutor(final Shell shell) {
-        return new ProgressMonitorDialogCommandExecutor(shell);
-    }
-
-    /**
-     * <p>
-     * Creates a new {@link ICommandExecutor} that is suitable for use in
-     * general UI scenarios. The executor will execute commands invisibly for a
-     * short period of time, and then show a modal dialog that reports on the
-     * progress of the command and allows the user to cancel.
-     * </p>
-     *
-     * <p>
-     * The amount of time that the command runs before showing visible progress
-     * can be configured through the <Code>progressUIDeferTime</code> parameter.
-     * If this parameter is <code>0</code>, progress will be shown for the
-     * command immediately.
-     * </p>
-     *
-     * @param shell
-     *        a parent {@link Shell} (must not be <code>null</code>)
-     * @param progressUIDeferTime
-     *        amount of time in milliseconds to defer showing progress
-     * @return a new {@link ICommandExecutor} as described above
-     */
-    public static ICommandExecutor newUICommandExecutor(final Shell shell, final long progressUIDeferTime) {
-        return new ProgressMonitorDialogCommandExecutor(shell, progressUIDeferTime);
-    }
-
-    /**
-     * Creates a new {@link ICommandExecutor} that can be used by a wizard or
-     * wizard page.
-     *
-     * @param wizardContainer
-     *        an {@link IWizardContainer} (must not be <code>null</code>)
-     * @return a new {@link ICommandExecutor} as described above
-     */
-    public static ICommandExecutor newWizardCommandExecutor(final IWizardContainer wizardContainer) {
-        return new WizardContainerCommandExecutor(wizardContainer);
-    }
-
-    /**
-     * Creates a new {@link ICommandExecutor} that displays a busy indicator
-     * while it runs commands.
-     *
-     * @param display
-     *        the SWT {@link Display} (must not be <code>null</code>)
-     * @return a new {@link ICommandExecutor} as described above
-     */
-    public static ICommandExecutor newBusyIndicatorCommandExecutor(final Shell shell) {
-        return new BusyIndicatorCommandExecutor(shell);
+    public static ICommandExecutor newUIJobCommandExecutor(
+            @NotNull final Project project,
+            @Nullable final JobOptions jobOptions) {
+        return new UIJobCommandExecutor(project, jobOptions);
     }
 
     /**

@@ -35,12 +35,12 @@ public interface IAsyncObjectWaiter {
     void joinThread(Thread thread) throws InterruptedException;
 
     /**
-     * Blocks until the job has finished.
+     * Blocks until the task has finished.
      *
      * @param task
-     *        the job to wait on (must not be <code>null</code>)
+     *        the task to wait on (must not be <code>null</code>)
      */
-    void joinJob(Task task) throws InterruptedException;
+    void joinTask(Task task) throws InterruptedException;
 
     /**
      * Blocks until the predicate reports the condition is true.

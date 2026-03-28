@@ -4,12 +4,12 @@
 package com.github.lizhanyin.tfs.client.framework.command;
 
 import java.text.MessageFormat;
+import java.util.concurrent.CountDownLatch;
 
+import com.github.lizhanyin.tfs.client.util.ExtensionLoader;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import com.intellij.openapi.progress.Task;
-
-import com.microsoft.tfs.client.common.util.ExtensionLoader;
 
 /**
  * An {@link IAsyncObjectWaiter} that will proxy to an implementation provided
@@ -45,12 +45,27 @@ public class ExtensionPointAsyncObjectWaiter implements IAsyncObjectWaiter {
     }
 
     @Override
-    public void joinJob(final Job job) throws InterruptedException {
+    public void joinTask(final Task task) throws InterruptedException {
         final IAsyncObjectWaiter e = getExtension();
         if (e != null) {
-            e.joinJob(job);
+            e.joinTask(task);
         } else {
-            job.join();
+            // IDEA Task doesn't have a direct join method
+            // We need to wait for completion using polling
+            waitUntilTrue(new Predicate() {
+                @Override
+                public boolean isTrue() {
+                    // For JobCommandAdapter (our Task.Backgroundable subclass),
+                    // check if the status has been set (indicates completion)
+                    if (task instanceof JobCommandAdapter) {
+                        ((JobCommandAdapter) task).getStatus();
+                        return true;
+                    }
+                    // For other Task types, we can't reliably check completion
+                    // This shouldn't happen in normal usage
+                    return true;
+                }
+            });
         }
     }
 

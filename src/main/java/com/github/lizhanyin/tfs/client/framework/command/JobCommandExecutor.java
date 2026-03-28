@@ -7,20 +7,21 @@ import com.github.lizhanyin.tfs.runtime.IStatus;
 import com.github.lizhanyin.tfs.runtime.Status;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jetbrains.annotations.NotNull;
 
-import org.eclipse.core.runtime.jobs.Job;
+import com.intellij.openapi.progress.Task;
 
 import com.github.lizhanyin.tfs.client.TFSCommonClientPlugin;
 
 /**
  * <p>
  * This class implements a non-blocking {@link ICommandExecutor} by making use
- * of the Eclipse {@link Job} framework.
+ * of the IntelliJ IDEA {@link Task.Backgroundable} framework.
  * </p>
  *
  * <p>
  * The {@link ICommandExecutor#execute(ICommand)} method is implemented by
- * scheduling a new {@link Job} to run the specified {@link ICommand} and then
+ * queuing a new {@link Task.Backgroundable} to run the specified {@link ICommand} and then
  * returning immediately.
  * </p>
  *
@@ -28,19 +29,19 @@ import com.github.lizhanyin.tfs.client.TFSCommonClientPlugin;
  * As a non-blocking {@link ICommandExecutor}, this executor returns
  * <code>true</code> from {@link #isAsync()} and returns a {@link FutureStatus}
  * from the {@link #execute(ICommand)} method. The {@link FutureStatus} returned
- * by this executor returns the {@link Job} produced by executor from the
+ * by this executor returns the {@link Task.Backgroundable} produced by executor from the
  * {@link FutureStatus#getAsyncObject()} method.
  * </p>
  *
  * <p>
- * Attributes of the {@link Job}s created and scheduled by this executor can be
+ * Attributes of the {@link Task.Backgroundable}s created and queued by this executor can be
  * configured by passing an instance of {@link JobOptions} at construction time.
  * The no-args constructor uses default values for all of the configurable
- * {@link Job} attributes - see the {@link JobOptions} class for details.
+ * {@link Task} attributes - see the {@link JobOptions} class for details.
  * </p>
  *
  * @see ICommandExecutor
- * @see Job
+ * @see Task.Backgroundable
  * @see FutureStatus
  * @see JobOptions
  */
@@ -50,9 +51,9 @@ public class JobCommandExecutor extends CommandExecutor {
     private final JobOptions jobOptions;
 
     /**
-     * Creates a new {@link JobCommandExecutor} that creates {@link Job}s
+     * Creates a new {@link JobCommandExecutor} that creates {@link Task.Backgroundable}s
      * configured with default attributes. For control over some of the
-     * {@link Job} attributes, use the {@link #JobCommandExecutor(JobOptions)}
+     * {@link Task} attributes, use the {@link #JobCommandExecutor(JobOptions)}
      * constructor instead.
      */
     public JobCommandExecutor() {
@@ -61,8 +62,8 @@ public class JobCommandExecutor extends CommandExecutor {
 
     /**
      * <p>
-     * Creates a new {@link JobCommandExecutor}. {@link Job}s created and
-     * scheduled by this executor will be configured with the attribute values
+     * Creates a new {@link JobCommandExecutor}. {@link Task.Backgroundable}s created and
+     * queued by this executor will be configured with the attribute values
      * that are set in the specified {@link JobOptions} instance.
      * </p>
      * <p>
@@ -73,7 +74,7 @@ public class JobCommandExecutor extends CommandExecutor {
      * </p>
      *
      * @param jobOptions
-     *        holds attribute values that are used to configure {@link Job}s
+     *        holds attribute values that are used to configure {@link Task.Backgroundable}s
      *        created by this {@link JobCommandExecutor} (pass <code>null</code>
      *        to use default values for all configurable attributes)
      *
@@ -102,69 +103,62 @@ public class JobCommandExecutor extends CommandExecutor {
      * (com.microsoft.tfs.client.command.ICommand)
      */
     @Override
-    public IStatus execute(final ICommand command) {
-        final Job job = jobOptions.createJobFor(command, getCommandStartedCallback(), getCommandFinishedCallback());
+    public IStatus execute(@NotNull final ICommand command) {
+        final Task.Backgroundable task = jobOptions.createTaskFor(command, getCommandStartedCallback(), getCommandFinishedCallback());
 
-        jobOptions.configure(job);
+        task.queue();
 
-        jobOptions.schedule(job);
-
-        return new JobFutureStatus(job);
+        return new TaskFutureStatus(task);
     }
 
     /**
      * A subclass of {@link AbstractFutureStatus} that implements a
-     * {@link FutureStatus} based around using a {@link Job} as the async
+     * {@link FutureStatus} based around using a {@link Task.Backgroundable} as the async
      * object.
      * <p>
      * Delegates {@link #join()} duties to the
      * {@link ExtensionPointAsyncObjectWaiter} to give UI plug-ins a chance to
      * keep UI events going.
      */
-    protected static class JobFutureStatus extends AbstractFutureStatus {
-        protected final Job job;
+    protected static class TaskFutureStatus extends AbstractFutureStatus {
+        protected final Task.Backgroundable task;
+        protected final JobCommandAdapter taskAdapter;
 
-        private IStatus jobResult;
-        private final Object jobResultLock = new Object();
+        private volatile boolean completed = false;
+        private IStatus taskResult;
+        private final Object taskResultLock = new Object();
 
-        public JobFutureStatus(final Job job) {
-            super(job);
-            this.job = job;
+        public TaskFutureStatus(final Task.Backgroundable task) {
+            super(task);
+            this.task = task;
+            this.taskAdapter = (task instanceof JobCommandAdapter) ? (JobCommandAdapter) task : null;
         }
 
         @Override
         public boolean isCompleted() {
-            return (job.getState() == Job.NONE && job.getResult() != null);
+            return taskAdapter != null || completed;
         }
 
         @Override
         public final void join() {
             try {
                 // Use the implementation that can defer to extensions
-                new ExtensionPointAsyncObjectWaiter().joinJob(job);
-
-                if (job.getResult() == null) {
-                    /* Build a dummy exception for a stack trace */
-                    log.error("Unexpected null job result while waiting for job to complete", new Exception()); //$NON-NLS-1$
-
-                    jobResult =
-                        new Status(Status.ERROR, TFSCommonClientPlugin.PLUGIN_ID, 0, "Unexpected null jobresult", null); //$NON-NLS-1$
-                }
+                new ExtensionPointAsyncObjectWaiter().joinTask(task);
             } catch (final InterruptedException e) {
-                synchronized (jobResultLock) {
-                    jobResult = new Status(Status.ERROR, TFSCommonClientPlugin.PLUGIN_ID, 0, null, e);
+                synchronized (taskResultLock) {
+                    taskResult = new Status(Status.ERROR, TFSCommonClientPlugin.PLUGIN_ID, 0, null, e);
                 }
             }
         }
 
         @Override
         protected IStatus getCompletedStatus() {
-            synchronized (jobResultLock) {
-                if (jobResult == null) {
-                    jobResult = job.getResult();
+            synchronized (taskResultLock) {
+                if (taskResult == null && taskAdapter != null) {
+                    taskResult = taskAdapter.getStatus();
                 }
-
-                return jobResult;
+                completed = taskResult != null;
+                return taskResult != null ? taskResult : Status.OK_STATUS;
             }
         }
     }

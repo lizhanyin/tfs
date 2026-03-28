@@ -19,7 +19,7 @@ public abstract class BaseTask implements Task {
         Check.notNull(project, "project"); //$NON-NLS-1$
 
         this.project = project;
-        commandExecutor = UICommandExecutorFactory.newUICommandExecutor(project);
+        commandExecutor = UICommandExecutorFactory.newUIJobCommandExecutor(project);
     }
 
     protected Project getProject() {
