@@ -3,9 +3,9 @@
 
 package com.github.lizhanyin.tfs.client.commands;
 
-import org.eclipse.core.runtime.IProgressMonitor;
-import com.github.lizhanyin.tfs.runtime.IStatus;
+import com.intellij.openapi.progress.ProgressIndicator;
 
+import com.github.lizhanyin.tfs.runtime.IStatus;
 import com.github.lizhanyin.tfs.client.TFSCommonClientPlugin;
 import com.github.lizhanyin.tfs.client.framework.command.Command;
 import com.github.lizhanyin.tfs.client.framework.command.CommandInitializationRunnable;
@@ -22,6 +22,7 @@ import com.microsoft.tfs.util.tasks.TaskMonitorService;
  * exception cases in our client products.
  */
 public abstract class TFSCommand extends Command {
+
     public TFSCommand() {
         addExceptionHandler(new TFSCommandExceptionHandler());
 
@@ -48,7 +49,7 @@ public abstract class TFSCommand extends Command {
         private volatile boolean addedTaskMonitorAdapter = false;
 
         @Override
-        public void initialize(final IProgressMonitor progressMonitor) throws Exception {
+        public void initialize(final ProgressIndicator progressMonitor) throws Exception {
             final TaskMonitor tm = new ProgressMonitorTaskMonitorAdapter(progressMonitor);
             TaskMonitorService.pushTaskMonitor(tm);
             ActiveHttpMethods.setMonitor(tm);
@@ -56,7 +57,7 @@ public abstract class TFSCommand extends Command {
         }
 
         @Override
-        public void complete(final IProgressMonitor progressMonitor) {
+        public void complete(final ProgressIndicator progressMonitor) {
             if (addedTaskMonitorAdapter) {
                 TaskMonitorService.popTaskMonitor(true);
                 ActiveHttpMethods.clearMonitor();

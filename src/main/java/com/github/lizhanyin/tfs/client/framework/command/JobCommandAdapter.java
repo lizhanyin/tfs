@@ -3,50 +3,53 @@
 
 package com.github.lizhanyin.tfs.client.framework.command;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.Task;
+
 import com.github.lizhanyin.tfs.runtime.IStatus;
 import com.github.lizhanyin.tfs.runtime.Status;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.jobs.Job;
-
 import com.github.lizhanyin.tfs.client.framework.command.exception.CommandExceptionHandlerUtils;
 
 /**
  * <p>
- * This class adapts an instance of {@link ICommand} to the {@link Job} class.
+ * This class adapts an instance of {@link ICommand} to the {@link Task.Backgroundable} class.
  * </p>
  *
  * <p>
- * The {@link Job#run(IProgressMonitor)} method is implemented by directly
- * calling the {@link ICommand#run(IProgressMonitor)} method of the command
+ * The {@link Task.Backgroundable#run(ProgressIndicator)} method is implemented by directly
+ * calling the {@link ICommand#run(ProgressIndicator)} method of the command
  * being wrapped by this adapter. Any exception thrown by the command will be
  * converted to an {@link IStatus} by calling
- * {@link CommandExceptionHandlerUtils#handleCommandException(ICommand, Throwable)}
- * . This wrapper can optionally take an {@link ICommandFinishedCallback} that
+ * {@link CommandExceptionHandlerUtils#handleCommandException(ICommand, Throwable)}.
+ * This wrapper can optionally take an {@link ICommandFinishedCallback} that
  * is called back after running the command and producing an {@link IStatus}.
- * After the job has finished, the status produced by the command run is
- * available by calling the {@link Job#getResult()} method.
  * </p>
  *
  * @see ICommand
- * @see Job
+ * @see Task.Backgroundable
  * @see ICommandFinishedCallback
  */
-public class JobCommandAdapter extends Job {
-    private static final Log log = LogFactory.getLog(JobCommandAdapter.class);
+public class JobCommandAdapter extends Task.Backgroundable {
+    private static final Logger log = Logger.getInstance(JobCommandAdapter.class);
 
     private final ICommand command;
     private final ICommandStartedCallback startedCallback;
     private final ICommandFinishedCallback finishedCallback;
 
-    public JobCommandAdapter(final ICommand command) {
+    private final Object statusLock = new Object();
+    private IStatus status;
+
+    public JobCommandAdapter(@NotNull final ICommand command) {
         this(command, null, null);
     }
 
     /**
      * Creates a new {@link JobCommandAdapter}, adapting the given
-     * {@link ICommand} to the {@link Job} class.
+     * {@link ICommand} to the {@link Task.Backgroundable} class.
      *
      * @param command
      *        the {@link ICommand} to adapt (must not be <code>null</code>)
@@ -58,25 +61,19 @@ public class JobCommandAdapter extends Job {
      *        the command has finished (may be <code>null</code>)
      */
     public JobCommandAdapter(
-        final ICommand command,
-        final ICommandStartedCallback startedCallback,
-        final ICommandFinishedCallback finishedCallback) {
-        super(command.getName());
+            @NotNull final ICommand command,
+            @Nullable final ICommandStartedCallback startedCallback,
+            @Nullable final ICommandFinishedCallback finishedCallback) {
+        super(null, command.getName(), true);
 
         this.command = command;
         this.startedCallback = startedCallback;
         this.finishedCallback = finishedCallback;
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @seeorg.eclipse.core.runtime.jobs.Job#run(org.eclipse.core.runtime.
-     * IProgressMonitor)
-     */
     @Override
-    protected IStatus run(final IProgressMonitor monitor) {
-        IStatus status;
+    public void run(@NotNull final ProgressIndicator indicator) {
+        IStatus result;
 
         if (startedCallback != null) {
             try {
@@ -87,18 +84,46 @@ public class JobCommandAdapter extends Job {
         }
 
         try {
-            status = command.run(monitor);
-            if (status == null) {
-                status = Status.OK_STATUS;
+            result = command.run(indicator);
+            if (result == null) {
+                result = Status.OK_STATUS;
             }
         } catch (final Exception e) {
-            status = CommandExceptionHandlerUtils.handleCommandException(command, e);
+            result = CommandExceptionHandlerUtils.handleCommandException(command, e);
+        }
+
+        synchronized (statusLock) {
+            this.status = result;
+        }
+    }
+
+    @Override
+    public void onSuccess() {
+        if (finishedCallback != null) {
+            finishedCallback.onCommandFinished(command, getStatus());
+        }
+    }
+
+    @Override
+    public void onThrowable(@NotNull final Throwable error) {
+        synchronized (statusLock) {
+            this.status = CommandExceptionHandlerUtils.handleCommandException(command, error);
         }
 
         if (finishedCallback != null) {
-            finishedCallback.onCommandFinished(command, status);
+            finishedCallback.onCommandFinished(command, getStatus());
         }
+    }
 
-        return status;
+    /**
+     * Gets the status of the command execution.
+     *
+     * @return the command execution status
+     */
+    @NotNull
+    public IStatus getStatus() {
+        synchronized (statusLock) {
+            return status != null ? status : Status.OK_STATUS;
+        }
     }
 }

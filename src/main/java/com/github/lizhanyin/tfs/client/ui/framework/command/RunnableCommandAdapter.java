@@ -3,31 +3,34 @@
 
 package com.github.lizhanyin.tfs.client.ui.framework.command;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.progress.ProgressIndicator;
+
 import com.github.lizhanyin.tfs.client.framework.command.ICommand;
 import com.github.lizhanyin.tfs.client.framework.command.ICommandFinishedCallback;
 import com.github.lizhanyin.tfs.client.framework.command.ICommandStartedCallback;
+import com.github.lizhanyin.tfs.client.framework.command.exception.CommandExceptionHandlerUtils;
 import com.github.lizhanyin.tfs.runtime.IStatus;
 import com.github.lizhanyin.tfs.runtime.Status;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.eclipse.core.runtime.IProgressMonitor;
 
-import com.github.lizhanyin.tfs.client.framework.command.exception.CommandExceptionHandlerUtils;
 import com.microsoft.tfs.util.Check;
 
 /**
  * <p>
- * This class adapts an instanceof {@link ICommand} to the {@link Runnable}
+ * This class adapts an instance of {@link ICommand} to the {@link Runnable}
  * interface.
  * </p>
  *
  * <p>
  * The {@link Runnable#run()} interface method is implemented by directly
- * calling the {@link ICommand#run(org.eclipse.core.runtime.IProgressMonitor)}
- * method of the command being wrapped by this adapter. Any exception thrown by
- * the command will be converted to an {@link IStatus} by calling
- * {@link CommandExceptionHandlerUtils#handleCommandException(ICommand, Throwable)}
- * . This wrapper can optionally take an {@link ICommandFinishedCallback} that
+ * calling the {@link ICommand#run(ProgressIndicator)} method of the command
+ * being wrapped by this adapter. Any exception thrown by the command will be
+ * converted to an {@link IStatus} by calling
+ * {@link CommandExceptionHandlerUtils#handleCommandException(ICommand, Throwable)}.
+ * This wrapper can optionally take an {@link ICommandFinishedCallback} that
  * is called back after running the command and producing an {@link IStatus}.
  * After the runnable has finished, the status produced by the command run is
  * available by calling the {@link #getStatus()} method.
@@ -38,10 +41,10 @@ import com.microsoft.tfs.util.Check;
  * @see ICommandFinishedCallback
  */
 public class RunnableCommandAdapter implements Runnable {
-    private static final Log log = LogFactory.getLog(RunnableCommandAdapter.class);
+    private static final Logger log = Logger.getInstance(RunnableCommandAdapter.class);
 
     private final ICommand command;
-    private final IProgressMonitor progressMonitor;
+    private final ProgressIndicator progressIndicator;
     private final ICommandStartedCallback startedCallback;
     private final ICommandFinishedCallback finishedCallback;
 
@@ -53,9 +56,9 @@ public class RunnableCommandAdapter implements Runnable {
      *
      * @param command
      *        the {@link ICommand} to adapt (must not be <code>null</code>)
-     * @param progressMonitor
-     *        an optional {@link IProgressMonitor} to pass to the
-     *        {@link ICommand#run(IProgressMonitor)} method (may be
+     * @param progressIndicator
+     *        an optional {@link ProgressIndicator} to pass to the
+     *        {@link ICommand#run(ProgressIndicator)} method (may be
      *        <code>null</code>)
      * @param startedCallback
      *        an optional {@link ICommandStartedCallback} to call back to before
@@ -65,23 +68,18 @@ public class RunnableCommandAdapter implements Runnable {
      *        the command has finished (may be <code>null</code>)
      */
     public RunnableCommandAdapter(
-        final ICommand command,
-        final IProgressMonitor progressMonitor,
-        final ICommandStartedCallback startedCallback,
-        final ICommandFinishedCallback finishedCallback) {
+        @NotNull final ICommand command,
+        @Nullable final ProgressIndicator progressIndicator,
+        @Nullable final ICommandStartedCallback startedCallback,
+        @Nullable final ICommandFinishedCallback finishedCallback) {
         Check.notNull(command, "command"); //$NON-NLS-1$
 
         this.command = command;
-        this.progressMonitor = progressMonitor;
+        this.progressIndicator = progressIndicator;
         this.startedCallback = startedCallback;
         this.finishedCallback = finishedCallback;
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see java.lang.Runnable#run()
-     */
     @Override
     public void run() {
         status = null;
@@ -95,7 +93,7 @@ public class RunnableCommandAdapter implements Runnable {
         }
 
         try {
-            status = command.run(progressMonitor);
+            status = command.run(progressIndicator);
             if (status == null) {
                 status = Status.OK_STATUS;
             }
@@ -112,6 +110,7 @@ public class RunnableCommandAdapter implements Runnable {
      * @return the {@link IStatus} produced by the last run of this adapter, or
      *         <code>null</code> if it has never run
      */
+    @Nullable
     public IStatus getStatus() {
         return status;
     }

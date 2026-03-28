@@ -5,12 +5,13 @@ package com.github.lizhanyin.tfs.client.framework.command;
 
 import java.text.MessageFormat;
 
+import com.intellij.openapi.progress.ProgressIndicator;
 import com.github.lizhanyin.tfs.client.ui.framework.command.RunnableCommandAdapter;
-import org.eclipse.core.runtime.IProgressMonitor;
 import com.github.lizhanyin.tfs.runtime.IStatus;
 import com.github.lizhanyin.tfs.runtime.Status;
 
 import com.microsoft.tfs.util.Check;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * <p>
@@ -127,13 +128,13 @@ public class ThreadedCancellableCommand extends Command implements CommandWrappe
     }
 
     @Override
-    protected IStatus doRun(final IProgressMonitor progressMonitor) throws Exception {
+    protected IStatus doRun(final @NotNull ProgressIndicator progressMonitor) throws Exception {
         final RunnableCommandAdapter adapter = new RunnableCommandAdapter(wrappedCommand, progressMonitor, null, null);
 
         final Thread commandThread = new Thread(adapter);
 
         final String nameFormat = "CancellableCommandThread-{0}"; //$NON-NLS-1$
-        final String name = MessageFormat.format(nameFormat, Long.toString(commandThread.getId()));
+        final String name = MessageFormat.format(nameFormat, Long.toString(commandThread.threadId()));
 
         commandThread.setName(name);
 

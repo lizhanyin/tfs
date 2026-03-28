@@ -3,165 +3,153 @@
 
 package com.github.lizhanyin.tfs.client.ui.util;
 
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import com.intellij.openapi.progress.ProgressIndicator;
 
 import com.microsoft.tfs.util.Check;
 import com.microsoft.tfs.util.tasks.TaskMonitor;
 
 /**
  * {@link ProgressMonitorTaskMonitorAdapter} adapts an instance of
- * {@link IProgressMonitor} to the {@link TaskMonitor} interface. Most of the
+ * {@link ProgressIndicator} to the {@link TaskMonitor} interface. Most of the
  * {@link TaskMonitor} methods map in a very straightforward way to
- * {@link TaskMonitor}. Note that the {@link TaskMonitor#newSubTaskMonitor(int)}
- * method is satisfied by using the {@link SubProgressMonitor} class.
+ * {@link ProgressIndicator}.
  *
  * @see TaskMonitor
- * @see IProgressMonitor
- * @see SubProgressMonitor
+ * @see ProgressIndicator
  */
 public class ProgressMonitorTaskMonitorAdapter implements TaskMonitor {
     /**
-     * The {@link IProgressMonitor} this adapter is wrapping (never
+     * The {@link ProgressIndicator} this adapter is wrapping (never
      * <code>null</code>).
      */
-    private final IProgressMonitor progressMonitor;
+    private final ProgressIndicator progressIndicator;
 
     /**
-     * Style bits that are passed to the {@link SubProgressMonitor} constructor
-     * when a sub task monitor is requested.
+     * The starting fraction for this monitor (used for sub-task monitors).
      */
-    private final int subProgressMonitorStyle;
+    private final double startFraction;
 
     /**
-     * Creates a new {@link ProgressMonitorTaskMonitorAdapter}, wrapping the
-     * specified {@link IProgressMonitor}.
-     *
-     * @param progressMonitor
-     *        an {@link IProgressMonitor} to wrap (must not be <code>null</code>
-     *        )
+     * The total fraction allocated to this monitor (used for sub-task monitors).
      */
-    public ProgressMonitorTaskMonitorAdapter(final IProgressMonitor progressMonitor) {
-        this(progressMonitor, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK);
-    }
+    private final double totalFraction;
+
+    /**
+     * The parent adapter (for sub-task monitors).
+     */
+    @Nullable
+    private final ProgressMonitorTaskMonitorAdapter parent;
 
     /**
      * Creates a new {@link ProgressMonitorTaskMonitorAdapter}, wrapping the
-     * specified {@link IProgressMonitor}. If a sub-task monitor is requested by
-     * calling the {@link #newSubTaskMonitor(int)} method, the
-     * {@link SubProgressMonitor} created to satisfy the request will be passed
-     * the specified style bits.
+     * specified {@link ProgressIndicator}.
      *
-     * @param progressMonitor
-     *        an {@link IProgressMonitor} to wrap (must not be <code>null</code>
-     *        )
-     * @param subProgressMonitorStyle
-     *        {@link SubProgressMonitor} style bits used to create sub-task
-     *        monitors
+     * @param progressIndicator
+     *        a {@link ProgressIndicator} to wrap (must not be <code>null</code>)
      */
-    public ProgressMonitorTaskMonitorAdapter(
-        final IProgressMonitor progressMonitor,
-        final int subProgressMonitorStyle) {
-        Check.notNull(progressMonitor, "progressMonitor"); //$NON-NLS-1$
-
-        this.progressMonitor = progressMonitor;
-        this.subProgressMonitorStyle = subProgressMonitorStyle;
+    public ProgressMonitorTaskMonitorAdapter(@NotNull final ProgressIndicator progressIndicator) {
+        this(progressIndicator, null, 0.0, 1.0);
     }
 
-    /*
-     * (non-Javadoc)
+    /**
+     * Creates a new {@link ProgressMonitorTaskMonitorAdapter} as a sub-task monitor.
      *
-     * @see com.microsoft.tfs.util.tasks.TaskMonitor#begin(java.lang.String,
-     * int)
+     * @param progressIndicator
+     *        a {@link ProgressIndicator} to wrap (must not be <code>null</code>)
+     * @param parent
+     *        the parent adapter
+     * @param startFraction
+     *        the starting fraction (0.0 to 1.0)
+     * @param totalFraction
+     *        the total fraction allocated to this monitor
      */
+    private ProgressMonitorTaskMonitorAdapter(
+        @NotNull final ProgressIndicator progressIndicator,
+        @Nullable final ProgressMonitorTaskMonitorAdapter parent,
+        final double startFraction,
+        final double totalFraction) {
+        Check.notNull(progressIndicator, "progressIndicator"); //$NON-NLS-1$
+
+        this.progressIndicator = progressIndicator;
+        this.parent = parent;
+        this.startFraction = startFraction;
+        this.totalFraction = totalFraction;
+    }
+
     @Override
-    public void begin(final String taskName, final int totalWork) {
-        progressMonitor.beginTask(taskName, totalWork);
+    public void begin(@Nullable final String taskName, final int totalWork) {
+        if (taskName != null) {
+            progressIndicator.setText(taskName);
+        }
+        progressIndicator.setFraction(0.0);
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * com.microsoft.tfs.util.tasks.TaskMonitor#beginWithUnknownTotalWork(java
-     * .lang.String)
-     */
     @Override
-    public void beginWithUnknownTotalWork(final String taskName) {
-        progressMonitor.beginTask(taskName, IProgressMonitor.UNKNOWN);
+    public void beginWithUnknownTotalWork(@Nullable final String taskName) {
+        if (taskName != null) {
+            progressIndicator.setText(taskName);
+        }
+        // IDEA's ProgressIndicator doesn't have an "unknown" mode
+        // Just set the text and proceed
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see com.microsoft.tfs.util.tasks.TaskMonitor#done()
-     */
     @Override
     public void done() {
-        progressMonitor.done();
+        progressIndicator.setFraction(startFraction + totalFraction);
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see com.microsoft.tfs.util.tasks.TaskMonitor#isCanceled()
-     */
     @Override
     public boolean isCanceled() {
-        return progressMonitor.isCanceled();
+        return progressIndicator.isCanceled();
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see com.microsoft.tfs.util.tasks.TaskMonitor#setCanceled()
-     */
     @Override
     public void setCanceled() {
-        progressMonitor.setCanceled(true);
+        progressIndicator.cancel();
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see com.microsoft.tfs.util.tasks.TaskMonitor#newSubTaskMonitor(int)
-     */
     @Override
+    @NotNull
     public TaskMonitor newSubTaskMonitor(final int amount) {
-        final SubProgressMonitor subMonitor = new SubProgressMonitor(progressMonitor, amount, subProgressMonitorStyle);
-        return new ProgressMonitorTaskMonitorAdapter(subMonitor);
+        // Calculate the fraction for this sub-task
+        // This is a simplified approach - assumes parent has allocated work proportionally
+        final double subFraction = totalFraction * (amount / 100.0);
+        final double subStartFraction = startFraction + subFraction;
+
+        return new ProgressMonitorTaskMonitorAdapter(
+            progressIndicator,
+            this,
+            subStartFraction,
+            subFraction);
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * com.microsoft.tfs.util.tasks.TaskMonitor#setCurrentWorkDescription(java
-     * .lang.String)
-     */
     @Override
-    public void setCurrentWorkDescription(final String description) {
-        progressMonitor.subTask(description);
+    public void setCurrentWorkDescription(@Nullable final String description) {
+        if (description != null) {
+            progressIndicator.setText2(description);
+        }
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * com.microsoft.tfs.util.tasks.TaskMonitor#setTaskName(java.lang.String)
-     */
     @Override
-    public void setTaskName(final String taskName) {
-        progressMonitor.setTaskName(taskName);
+    public void setTaskName(@Nullable final String taskName) {
+        if (taskName != null) {
+            progressIndicator.setText(taskName);
+        }
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see com.microsoft.tfs.util.tasks.TaskMonitor#worked(int)
-     */
     @Override
     public void worked(final int amount) {
-        progressMonitor.worked(amount);
+        // Update the fraction based on work done
+        // This is a simplified implementation
+        final double currentFraction = progressIndicator.getFraction();
+        final double increment = totalFraction * (amount / 100.0);
+        progressIndicator.setFraction(Math.min(currentFraction + increment, startFraction + totalFraction));
+    }
+
+    public @Nullable ProgressMonitorTaskMonitorAdapter getParent() {
+        return parent;
     }
 }

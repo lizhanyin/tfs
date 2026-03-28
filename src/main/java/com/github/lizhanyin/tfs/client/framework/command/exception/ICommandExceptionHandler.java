@@ -12,7 +12,7 @@ import com.github.lizhanyin.tfs.runtime.IStatus;
  * <p>
  * An {@link ICommandExceptionHandler} is called in response to an exception
  * thrown by an {@link ICommand} in its
- * {@link ICommand#run(org.eclipse.core.runtime.IProgressMonitor)} method. The
+ * {@link ICommand#run(com.intellij.openapi.progress.ProgressIndicator)} method. The
  * exception handler has a chance to examine the exception and return an
  * {@link IStatus} for the exception.
  * </p>

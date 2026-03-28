@@ -3,8 +3,9 @@
 
 package com.github.lizhanyin.tfs.client.framework.command;
 
-import com.github.lizhanyin.tfs.client.framework.command.exception.ICommandExceptionHandler;
+import com.intellij.openapi.progress.ProgressIndicator;
 
+import com.github.lizhanyin.tfs.client.framework.command.exception.ICommandExceptionHandler;
 import com.github.lizhanyin.tfs.runtime.IStatus;
 import com.github.lizhanyin.tfs.runtime.Status;
 import com.github.lizhanyin.tfs.runtime.OperationCanceledException;
@@ -63,7 +64,7 @@ public interface ICommand {
      *
      * <p>
      * If a command returns early because it has been cancelled (either through
-     * the supplied {@link IProgressMonitor} or through some other means) it
+     * the supplied {@link ProgressIndicator} or through some other means) it
      * should indicate this cancellation in some way. Commonly, canceled
      * commands will return an {@link IStatus} with a severity of
      * {@link IStatus#CANCEL}. A command can also indicate cancellation by
@@ -77,17 +78,17 @@ public interface ICommand {
      * </p>
      *
      * @param progressMonitor
-     *        an optional {@link IProgressMonitor} for the command to use
+     *        an optional {@link ProgressIndicator} for the command to use
      * @return an {@link IStatus} as described above
-     * @throws Exception
+     * @throws Exception e
      */
-    public IStatus run(IProgressMonitor progressMonitor) throws Exception;
+    public IStatus run(ProgressIndicator progressMonitor) throws Exception;
 
     /**
      * <p>
      * Called to determine whether or not this {@link ICommand} is cancelable.
      * An {@link ICommand} is considered cancelable if it checks the
-     * <code>isCanceled()</code> property of its {@link IProgressMonitor} when
+     * <code>isCanceled()</code> property of its {@link ProgressIndicator} when
      * run and returns early if <code>isCanceled()</code> returns
      * <code>true</code>.
      * </p>
@@ -143,7 +144,7 @@ public interface ICommand {
      * <p>
      * Typically, commands will supply an {@link ICommandExceptionHandler} to
      * have control over how specific types of exceptions that could be thrown
-     * by the {@link #run(IProgressMonitor)} method should be handled. If the
+     * by the {@link #run(ProgressIndicator)} method should be handled. If the
      * command does not wish to supply an exception handler, it returns
      * <code>null</code> from this method. Higher-level code that is running a
      * command should generally respect a command's exception handler if it has

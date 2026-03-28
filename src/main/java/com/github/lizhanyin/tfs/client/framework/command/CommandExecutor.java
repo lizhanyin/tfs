@@ -4,9 +4,9 @@
 package com.github.lizhanyin.tfs.client.framework.command;
 
 import com.github.lizhanyin.tfs.runtime.IStatus;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.eclipse.core.runtime.IProgressMonitor;
+import com.github.lizhanyin.tfs.runtime.Status;
+import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.progress.ProgressIndicator;
 
 
 import com.github.lizhanyin.tfs.client.framework.command.exception.CommandExceptionHandlerUtils;
@@ -21,7 +21,7 @@ import com.microsoft.tfs.util.Check;
  *
  * <p>
  * This executor executes commands on the thread that the <code>execute()</code>
- * method is called on and does not supply an {@link IProgressMonitor} to
+ * method is called on and does not supply an {@link ProgressIndicator} to
  * commands (unless {@link #getDefaultProgressMonitor()} is overridden).
  * Subclasses may provide different behavior.
  * </p>
@@ -48,9 +48,9 @@ import com.microsoft.tfs.util.Check;
  * @see ICommand
  */
 public class CommandExecutor implements ICommandExecutor {
-    private static final Log log = LogFactory.getLog(CommandExecutor.class);
+    private static final Logger log = Logger.getInstance(CommandExecutor.class);
 
-    private final IProgressMonitor progressMonitor;
+    private final ProgressIndicator progressMonitor;
 
     private ICommandStartedCallback commandStartedCallback = CommandStartedCallbackFactory.getDefaultCallback();
     private ICommandFinishedCallback commandFinishedCallback = CommandFinishedCallbackFactory.getDefaultCallback();
@@ -59,7 +59,7 @@ public class CommandExecutor implements ICommandExecutor {
         this(null);
     }
 
-    public CommandExecutor(final IProgressMonitor progressMonitor) {
+    public CommandExecutor(final ProgressIndicator progressMonitor) {
         this.progressMonitor = progressMonitor;
     }
 
@@ -150,10 +150,10 @@ public class CommandExecutor implements ICommandExecutor {
      * {@link CommandExecutor}) returns <code>null</code>, but other classes may
      * override.
      *
-     * @return the default {@link IProgressMonitor} to use during
+     * @return the default {@link ProgressIndicator} to use during
      *         {@link #execute(ICommand)}
      */
-    public IProgressMonitor getDefaultProgressMonitor() {
+    public ProgressIndicator getDefaultProgressMonitor() {
         return progressMonitor;
     }
 

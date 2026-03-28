@@ -7,34 +7,35 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.EmptyProgressIndicator;
+
 import com.github.lizhanyin.tfs.runtime.IStatus;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.NullProgressMonitor;
-
 import com.github.lizhanyin.tfs.client.framework.command.exception.ICommandExceptionHandler;
 import com.github.lizhanyin.tfs.client.framework.command.exception.MultiCommandExceptionHandler;
 import com.github.lizhanyin.tfs.client.framework.command.exception.NullCommandExceptionHandler;
+
 import com.microsoft.tfs.util.Check;
 
 /**
  * <p>
  * A convenience abstract implementation of the <code>ICommand</code> interface.
  * Clients subclass this class and need provide only an implementation of the
- * abstract {@link #doRun(IProgressMonitor)} method.
+ * abstract {@link #doRun(ProgressIndicator)} method.
  * </p>
  *
  * <p>
  * This implementation contains private fields to store the name and cancelable
  * state of this command. By default, subclasses are not cancelable and the
  * command name is the short name of the subclass. Subclasses can override these
- * defaults by calling {@link #setCancelable(boolean)} and
- * {@link #setName(String)}. In addition, this implementation guarantees that
- * the {@link IProgressMonitor} instance passed to subclasses in the
- * {@link #doRun(IProgressMonitor)} method is non-<code>null</code> and that
- * {@link IProgressMonitor#done()} will always be called on that instance.
+ * defaults by calling {@link #setCancellable(boolean)} and
+ * setName(String). In addition, this implementation guarantees that
+ * the {@link ProgressIndicator} instance passed to subclasses in the
+ * {@link #doRun(ProgressIndicator)} method is non-<code>null</code>.
  * </p>
  *
  * <p>
@@ -46,9 +47,9 @@ import com.microsoft.tfs.util.Check;
  * @see ICommand
  */
 public abstract class Command extends CancellableCommand implements ICommand {
-    private static final Log log = LogFactory.getLog(Command.class);
+    private static final Logger log = Logger.getInstance(Command.class);
 
-    private final List<ICommandExceptionHandler> exceptionHandlerList = new ArrayList<ICommandExceptionHandler>();
+    private final List<ICommandExceptionHandler> exceptionHandlerList = new ArrayList<>();
 
     /**
      * Subclasses may add initialization / completion runnables. For example,
@@ -57,50 +58,48 @@ public abstract class Command extends CancellableCommand implements ICommand {
      * implementing doRun() and requiring concrete classes to override yet
      * another run method.)
      */
-    private final List<CommandInitializationRunnable> initializationRunnables =
-        new ArrayList<CommandInitializationRunnable>();
+    private final List<CommandInitializationRunnable> initializationRunnables = new ArrayList<>();
 
     /**
      * Subclasses must override this method to perform the actual work of this
      * command.
      *
-     * @param progressMonitor
-     *        An {@link IProgressMonitor} to use (guaranteed to not be
-     *        <code>null</code>). Subclasses do not need to call
-     *        {@link IProgressMonitor#done()} on the instance.
+     * @param progressIndicator
+     *        A {@link ProgressIndicator} to use (guaranteed to not be
+     *        <code>null</code>).
      * @return the outcome of this command run as an {@link IStatus} (see
-     *         {@link ICommand#run(IProgressMonitor)})
-     * @throws Exception
+     *         {@link ICommand#run(ProgressIndicator)})
+     * @throws Exception e
      */
-    protected abstract IStatus doRun(IProgressMonitor progressMonitor) throws Exception;
+    protected abstract IStatus doRun(@NotNull ProgressIndicator progressIndicator) throws Exception;
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public final IStatus run(IProgressMonitor progressMonitor) throws Exception {
-        if (progressMonitor == null) {
-            progressMonitor = new NullProgressMonitor();
+    public final IStatus run(@Nullable ProgressIndicator progressIndicator) throws Exception {
+        if (progressIndicator == null) {
+            progressIndicator = new EmptyProgressIndicator();
         }
 
-        progressMonitor.setTaskName(getName());
+        progressIndicator.setText(getName());
 
         try {
             for (final CommandInitializationRunnable initializationRunnable : initializationRunnables) {
-                initializationRunnable.initialize(progressMonitor);
+                initializationRunnable.initialize(progressIndicator);
             }
 
-            return doRun(progressMonitor);
+            return doRun(progressIndicator);
         } finally {
             /*
              * Run the completion runnables - if there's an exception in any of
-             * them, keep processing them and do not propogate the exception.
+             * them, keep processing them and do not propagate the exception.
              */
             for (final CommandInitializationRunnable initializationRunnable : initializationRunnables) {
                 try {
-                    initializationRunnable.complete(progressMonitor);
+                    initializationRunnable.complete(progressIndicator);
                 } catch (final Throwable t) {
-                    log.info("Caught unexception in command completion runnable", t); //$NON-NLS-1$
+                    log.info("Caught exception in command completion runnable", t); //$NON-NLS-1$
                 }
             }
         }
@@ -112,10 +111,8 @@ public abstract class Command extends CancellableCommand implements ICommand {
      * @param handler
      *        The {@link ICommandExceptionHandler} to use for exceptions.
      */
-    protected final void setExceptionHandler(final ICommandExceptionHandler handler) {
-        setExceptionHandlers(new ICommandExceptionHandler[] {
-            handler
-        });
+    protected final void setExceptionHandler(@NotNull final ICommandExceptionHandler handler) {
+        setExceptionHandlers(new ICommandExceptionHandler[] { handler });
     }
 
     /**
@@ -126,7 +123,7 @@ public abstract class Command extends CancellableCommand implements ICommand {
      * @param handlers
      *        The {@link ICommandExceptionHandler}s to use for exceptions.
      */
-    protected final void setExceptionHandlers(final ICommandExceptionHandler[] handlers) {
+    protected final void setExceptionHandlers(@NotNull final ICommandExceptionHandler[] handlers) {
         exceptionHandlerList.clear();
         exceptionHandlerList.addAll(Arrays.asList(handlers));
     }
@@ -138,7 +135,7 @@ public abstract class Command extends CancellableCommand implements ICommand {
      * @param handler
      *        The exception handler to add.
      */
-    protected final void addExceptionHandler(final ICommandExceptionHandler handler) {
+    protected final void addExceptionHandler(@NotNull final ICommandExceptionHandler handler) {
         exceptionHandlerList.add(0, handler);
     }
 
@@ -147,11 +144,11 @@ public abstract class Command extends CancellableCommand implements ICommand {
      */
     @Override
     public ICommandExceptionHandler getExceptionHandler() {
-        if (exceptionHandlerList.size() == 0) {
+        if (exceptionHandlerList.isEmpty()) {
             return new NullCommandExceptionHandler();
         } else {
             final ICommandExceptionHandler[] exceptionHandlers =
-                exceptionHandlerList.toArray(new ICommandExceptionHandler[exceptionHandlerList.size()]);
+                exceptionHandlerList.toArray(new ICommandExceptionHandler[0]);
             return new MultiCommandExceptionHandler(exceptionHandlers);
         }
     }
@@ -159,14 +156,14 @@ public abstract class Command extends CancellableCommand implements ICommand {
     /**
      * Adds a {@link CommandInitializationRunnable} that will be called before
      * and after command subclass execution. Runnables will be executed in the
-     * order they are added, and if the command subclasses's
-     * {@link doRun(IProgressMonitor)} method throws an exception, the cleanup
+     * order they are added, and if the command subclass's
+     * {@link #doRun(ProgressIndicator)} method throws an exception, the cleanup
      * methods will still be executed.
      *
      * @param runnable
      *        The {@link CommandInitializationRunnable} to add.
      */
-    public void addCommandInitializationRunnable(final CommandInitializationRunnable runnable) {
+    public void addCommandInitializationRunnable(@NotNull final CommandInitializationRunnable runnable) {
         Check.notNull(runnable, "runnable"); //$NON-NLS-1$
 
         initializationRunnables.add(runnable);

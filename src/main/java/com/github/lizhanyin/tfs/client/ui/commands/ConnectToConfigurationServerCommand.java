@@ -8,12 +8,13 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.github.lizhanyin.tfs.client.ui.framework.command.ConnectCommandExceptionHandler;
+import org.jetbrains.annotations.Nullable;
+
+import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.progress.ProgressIndicator;
+
 import com.github.lizhanyin.tfs.client.commands.TFSCommand;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.eclipse.core.runtime.IProgressMonitor;
-
-
 import com.github.lizhanyin.tfs.runtime.IStatus;
 import com.github.lizhanyin.tfs.runtime.Status;
 import com.github.lizhanyin.tfs.client.Messages;
@@ -41,7 +42,7 @@ import com.microsoft.tfs.util.StringUtil;
  * server (i.e. TFS 2008 or earlier)
  */
 public class ConnectToConfigurationServerCommand extends TFSCommand implements ConnectCommand {
-    private static final Log log = LogFactory.getLog(ConnectToConfigurationServerCommand.class);
+    private static final Logger log = Logger.getInstance(ConnectToConfigurationServerCommand.class);
 
     private final URI serverURI;
     private Credentials credentials;
@@ -79,7 +80,7 @@ public class ConnectToConfigurationServerCommand extends TFSCommand implements C
     }
 
     @Override
-    protected IStatus doRun(final IProgressMonitor progressMonitor) throws Exception {
+    protected IStatus doRun(@Nullable final ProgressIndicator progressIndicator) throws Exception {
         final ConnectionAdvisor connectionAdvisor = new UIClientConnectionAdvisor();
 
         String message;
@@ -97,7 +98,10 @@ public class ConnectToConfigurationServerCommand extends TFSCommand implements C
 
         log.info(message);
 
-        progressMonitor.beginTask(message, IProgressMonitor.UNKNOWN);
+        if (progressIndicator != null) {
+            progressIndicator.setText(message);
+            progressIndicator.setIndeterminate(true);
+        }
 
         /*
          * URI fallbacks:
@@ -148,8 +152,8 @@ public class ConnectToConfigurationServerCommand extends TFSCommand implements C
 
         connection = null;
 
-        while (connectionTypes.size() > 0) {
-            final ConnectionURIAndType connectionData = connectionTypes.remove(0);
+        while (!connectionTypes.isEmpty()) {
+            final ConnectionURIAndType connectionData = connectionTypes.removeFirst();
 
             try {
                 if (TFSConfigurationServer.class.equals(connectionData.getType())) {
@@ -196,7 +200,7 @@ public class ConnectToConfigurationServerCommand extends TFSCommand implements C
                 }
 
                 /* Exit if there are no more formats to retry with. */
-                if (connectionTypes.size() == 0) {
+                if (connectionTypes.isEmpty()) {
                     throw e;
                 }
 
@@ -208,13 +212,11 @@ public class ConnectToConfigurationServerCommand extends TFSCommand implements C
 
         Check.notNull(connection, "connection"); //$NON-NLS-1$
 
-        if (connection instanceof TFSTeamProjectCollection) {
+        if (connection instanceof TFSTeamProjectCollection collection) {
             /*
              * Try to get the TFS2010+ Configuration Server from this
              * TFSTeamProjectCollection.
              */
-
-            final TFSTeamProjectCollection collection = (TFSTeamProjectCollection) connection;
 
             if (collection.getConfigurationServer() != null) {
                 connection = collection.getConfigurationServer();

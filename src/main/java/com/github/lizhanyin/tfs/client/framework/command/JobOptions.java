@@ -4,83 +4,61 @@
 package com.github.lizhanyin.tfs.client.framework.command;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
-import org.eclipse.core.runtime.QualifiedName;
-import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.core.runtime.jobs.Job;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import com.intellij.openapi.progress.Task;
 
 import com.microsoft.tfs.util.Check;
 
 /**
  * <p>
  * A {@link JobOptions} is a simple data holder class that holds a set of
- * configuration options used to create Eclipse {@link Job}s. A
+ * configuration options used to create IntelliJ {@link Task}s. A
  * {@link JobOptions}s instance is passed to a {@link JobCommandExecutor} during
  * construction, and that executor uses the option values when creating new
- * {@link Job}s.
+ * {@link Task}s.
  * </p>
  *
  * <p>
- * To configure {@link Job} attributes, call one of the public setter methods on
+ * To configure {@link Task} attributes, call one of the public setter methods on
  * an instance of this class. If an attribute is not set, it holds a default
- * value that is usually appropriate for most {@link Job}s. The default values
+ * value that is usually appropriate for most {@link Task}s. The default values
  * are public API documented in this class.
  * </p>
  *
- * @see Job
+ * @see Task
  * @see JobCommandExecutor
  */
 public class JobOptions {
     /**
-     * The default priority {@link Job} priority, equal to {@link Job#LONG}.
-     */
-    public static final int DEFAULT_PRIORITY = Job.LONG;
-
-    /**
-     * The default {@link Job} scheduling delay, equal to <code>0</code> (no
-     * delay).
+     * The default scheduling delay, equal to <code>0</code> (no delay).
      */
     public static final long DEFAULT_DELAY = 0;
 
     /**
-     * The default {@link Job} <i>system</i> attribute, equal to
-     * <code>false</code> (not a system job).
+     * The default <i>canBeCancelled</i> attribute, equal to <code>true</code>.
      */
-    public static final boolean DEFAULT_SYSTEM = false;
-
-    /**
-     * The default {@link Job} <i>user</i> attribute, equal to
-     * <code>false</code> (not a user job).
-     */
-    public static final boolean DEFAULT_USER = false;
+    public static final boolean DEFAULT_CANCELABLE = true;
 
     /**
      * The default {@link ICommandJobFactory}, which makes use of the
-     * {@link JobCommandAdapter} class to create new {@link Job} instances.
+     * {@link JobCommandExecutor} class to create new {@link Task} instances.
      */
-    public static final ICommandJobFactory DEFAULT_COMMAND_JOB_FACTORY = new DefaultCommandJobFactory();
+    public static final ICommandJobFactory DEFAULT_COMMAND_TASK_FACTORY = new DefaultCommandTaskFactory();
 
-    /**
-     * The default {@link ISchedulingRule}, equal to <code>null</code>.
-     */
-    public static final ISchedulingRule DEFAULT_SCHEDULING_RULE = null;
-
-    private int priority = DEFAULT_PRIORITY;
     private long delay = DEFAULT_DELAY;
-    private boolean system = DEFAULT_SYSTEM;
-    private boolean user = DEFAULT_USER;
-    private ISchedulingRule schedulingRule = DEFAULT_SCHEDULING_RULE;
-    private ICommandJobFactory commandJobFactory = DEFAULT_COMMAND_JOB_FACTORY;
-    private final Map properties = new HashMap();
+    private boolean cancelable = DEFAULT_CANCELABLE;
+    private ICommandJobFactory commandTaskFactory = DEFAULT_COMMAND_TASK_FACTORY;
+    private final Map<String, Object> properties = new HashMap<>();
 
     /**
      * Creates a new {@link JobOptions} that holds default values for all
      * configuration data.
      */
     public JobOptions() {
-
     }
 
     /**
@@ -92,22 +70,19 @@ public class JobOptions {
      *        another {@link JobOptions} instance to copy configuration data
      *        from, or <code>null</code>
      */
-    public JobOptions(final JobOptions other) {
+    public JobOptions(@Nullable final JobOptions other) {
         if (other == null) {
             return;
         }
 
-        priority = other.priority;
         delay = other.delay;
-        system = other.system;
-        user = other.user;
-        schedulingRule = other.schedulingRule;
-        commandJobFactory = other.commandJobFactory;
+        cancelable = other.cancelable;
+        commandTaskFactory = other.commandTaskFactory;
         properties.putAll(other.properties);
     }
 
     /**
-     * Creates a new {@link Job} instance, using the {@link ICommandJobFactory}
+     * Creates a new {@link Task.Backgroundable} instance, using the {@link ICommandJobFactory}
      * held by this {@link JobOptions}.
      *
      * @param command
@@ -116,69 +91,14 @@ public class JobOptions {
      *        an {@link ICommandStartedCallback} (may be <code>null</code>)
      * @param commandFinishedCallback
      *        an {@link ICommandFinishedCallback} (may be <code>null</code>)
-     * @return a new {@link Job} instance as per the {@link ICommandJobFactory}
+     * @return a new {@link Task.Backgroundable} instance as per the {@link ICommandJobFactory}
      *         contract
      */
-    public Job createJobFor(
-        final ICommand command,
-        final ICommandStartedCallback commandStartedCallback,
-        final ICommandFinishedCallback commandFinishedCallback) {
-        return commandJobFactory.newJobFor(command, commandStartedCallback, commandFinishedCallback);
-    }
-
-    /**
-     * Configures a {@link Job} instance using the configuration data held in
-     * this {@link JobOptions}.
-     *
-     * @param job
-     *        a {@link Job} to configure (must not be <code>null</code>)
-     */
-    public void configure(final Job job) {
-        Check.notNull(job, "job"); //$NON-NLS-1$
-
-        job.setPriority(priority);
-        job.setSystem(system);
-        job.setUser(user);
-        job.setRule(schedulingRule);
-
-        for (final Iterator it = properties.keySet().iterator(); it.hasNext();) {
-            final QualifiedName key = (QualifiedName) it.next();
-            final Object value = properties.get(key);
-
-            job.setProperty(key, value);
-        }
-    }
-
-    /**
-     * Schedules a {@link Job} to run using the configuration data held in this
-     * {@link JobOptions}.
-     *
-     * @param job
-     *        a {@link Job} to schedule (must not be <code>null</code>)
-     */
-    public void schedule(final Job job) {
-        job.schedule(delay);
-    }
-
-    /**
-     * @return the priority value currently held by this {@link JobOptions}
-     */
-    public int getPriority() {
-        return priority;
-    }
-
-    /**
-     * Sets the priority value of this {@link JobOptions} instance. The default
-     * value is {@link #DEFAULT_PRIORITY}. When creating new {@link Job}s, the
-     * value set here will be passed to {@link Job#setPriority(int)}.
-     *
-     * @param priority
-     *        a {@link Job} priority value
-     * @return this {@link JobOptions} instance for method chaining
-     */
-    public JobOptions setPriority(final int priority) {
-        this.priority = priority;
-        return this;
+    public Task.Backgroundable createTaskFor(
+        @NotNull final ICommand command,
+        @Nullable final ICommandStartedCallback commandStartedCallback,
+        @Nullable final ICommandFinishedCallback commandFinishedCallback) {
+        return commandTaskFactory.newTaskFor(command, commandStartedCallback, commandFinishedCallback);
     }
 
     /**
@@ -190,81 +110,36 @@ public class JobOptions {
 
     /**
      * Sets the scheduling delay value of this {@link JobOptions} instance. The
-     * default value is {@link #DEFAULT_DELAY}. When scheduling new {@link Job}
-     * s, the value set here will be passed to {@link Job#schedule(long)}.
+     * default value is {@link #DEFAULT_DELAY}.
      *
-     * @param priority
-     *        a {@link Job} scheduling delay value
+     * @param delay
+     *        a scheduling delay value in milliseconds
      * @return this {@link JobOptions} instance for method chaining
      */
+    @NotNull
     public JobOptions setDelay(final long delay) {
         this.delay = delay;
         return this;
     }
 
     /**
-     * @return the system option value currently held by this {@link JobOptions}
+     * @return the cancelable option value currently held by this {@link JobOptions}
      */
-    public boolean isSystem() {
-        return system;
+    public boolean isCancelable() {
+        return cancelable;
     }
 
     /**
-     * Sets the system option value of this {@link JobOptions} instance. The
-     * default value is {@link #DEFAULT_SYSTEM}. When creating new {@link Job}s,
-     * the value set here will be passed to {@link Job#setSystem(boolean)}.
+     * Sets the cancelable option value of this {@link JobOptions} instance. The
+     * default value is {@link #DEFAULT_CANCELABLE}.
      *
-     * @param priority
-     *        a {@link Job} system value
+     * @param cancelable
+     *        a cancelable value
      * @return this {@link JobOptions} instance for method chaining
      */
-    public JobOptions setSystem(final boolean system) {
-        this.system = system;
-        return this;
-    }
-
-    /**
-     * @return the user option value currently held by this {@link JobOptions}
-     */
-    public boolean isUser() {
-        return user;
-    }
-
-    /**
-     * Sets the user option value of this {@link JobOptions} instance. The
-     * default value is {@link #DEFAULT_USER}. When creating new {@link Job}s,
-     * the value set here will be passed to {@link Job#setUser(boolean)}.
-     *
-     * @param priority
-     *        a {@link Job} user value
-     * @return this {@link JobOptions} instance for method chaining
-     */
-    public JobOptions setUser(final boolean user) {
-        this.user = user;
-        return this;
-    }
-
-    /**
-     * @return the {@link ISchedulingRule} currently held by this
-     *         {@link JobOptions}
-     */
-    public ISchedulingRule getSchedulingRule() {
-        return schedulingRule;
-    }
-
-    /**
-     * Sets the scheduling rule of this {@link JobOptions} instance. The default
-     * value is {@link #DEFAULT_SCHEDULING_RULE}. When creating new {@link Job}
-     * s, the value set here will be passed to
-     * {@link Job#setRule(ISchedulingRule)}.
-     *
-     * @param schedulingRule
-     *        a {@link Job} scheduling rule, or <code>null</code> if the
-     *        {@link Job} should not have a scheduling rule
-     * @return this {@link JobOptions} instance for method chaining
-     */
-    public JobOptions setSchedulingRule(final ISchedulingRule schedulingRule) {
-        this.schedulingRule = schedulingRule;
+    @NotNull
+    public JobOptions setCancelable(final boolean cancelable) {
+        this.cancelable = cancelable;
         return this;
     }
 
@@ -272,65 +147,67 @@ public class JobOptions {
      * @return the {@link ICommandJobFactory} currently held by this
      *         {@link JobOptions}
      */
-    public ICommandJobFactory getCommandJobFactory() {
-        return commandJobFactory;
+    @NotNull
+    public ICommandJobFactory getCommandTaskFactory() {
+        return commandTaskFactory;
     }
 
     /**
-     * Sets the command job factory of this {@link JobOptions} instance. The
-     * default value is {@link #DEFAULT_COMMAND_JOB_FACTORY}. When creating new
-     * {@link Job}s, the factory is used to obtain a {@link Job} instance from
+     * Sets the command task factory of this {@link JobOptions} instance. The
+     * default value is {@link #DEFAULT_COMMAND_TASK_FACTORY}. When creating new
+     * {@link Task}s, the factory is used to obtain a {@link Task} instance from
      * an {@link ICommand}.
      *
-     * @param commandJobFactory
+     * @param commandTaskFactory
      *        an {@link ICommandJobFactory} (must not be <code>null</code>)
      * @return this {@link JobOptions} instance for method chaining
      */
-    public JobOptions setCommandJobFactory(final ICommandJobFactory commandJobFactory) {
-        Check.notNull(commandJobFactory, "commandJobFactory"); //$NON-NLS-1$
+    @NotNull
+    public JobOptions setCommandTaskFactory(@NotNull final ICommandJobFactory commandTaskFactory) {
+        Check.notNull(commandTaskFactory, "commandTaskFactory"); //$NON-NLS-1$
 
-        this.commandJobFactory = commandJobFactory;
+        this.commandTaskFactory = commandTaskFactory;
         return this;
     }
 
     /**
-     * Sets a {@link Job} property that will be set on new {@link Job}s created
-     * using this {@link JobOptions} by calling
-     * {@link Job#setProperty(QualifiedName, Object)}. The default is to have no
-     * properties set.
+     * Sets a property that can be used by tasks created using this {@link JobOptions}.
      *
      * @param key
      *        the property key (must not be <code>null</code>)
      * @param value
      *        the property value
      */
-    public void setProperty(final QualifiedName key, final Object value) {
+    public void setProperty(@NotNull final String key, @Nullable final Object value) {
         Check.notNull(key, "key"); //$NON-NLS-1$
 
         properties.put(key, value);
     }
 
     /**
-     * A default implementation of {@link ICommandJobFactory}, which creates new
-     * {@link JobCommandAdapter} instances to satisfy the
-     * {@link #newJobFor(ICommand, ICommandFinishedCallback)} method.
+     * Gets a property value.
+     *
+     * @param key
+     *        the property key
+     * @return the property value, or <code>null</code> if not set
      */
-    private static class DefaultCommandJobFactory implements ICommandJobFactory {
-        /*
-         * (non-Javadoc)
-         *
-         * @see
-         * com.github.lizhanyin.tfs.client.ui.shared.command.ICommandJobFactory
-         * #newJobFor(com.github.lizhanyin.tfs.client.ui.shared.command.ICommand,
-         * com
-         * .microsoft.tfs.client.common.shared.command.ICommandFinishedCallback)
-         */
+    @Nullable
+    public Object getProperty(@NotNull final String key) {
+        return properties.get(key);
+    }
+
+    /**
+     * A default implementation of {@link ICommandJobFactory}, which creates new
+     * {@link JobCommandExecutor} instances to satisfy the
+     * {@link #newTaskFor(ICommand, ICommandStartedCallback, ICommandFinishedCallback)} method.
+     */
+    private static class DefaultCommandTaskFactory implements ICommandJobFactory {
         @Override
-        public Job newJobFor(
-            final ICommand command,
-            final ICommandStartedCallback commandStartedCallback,
-            final ICommandFinishedCallback commandFinishedCallback) {
-            return new JobCommandAdapter(command, commandStartedCallback, commandFinishedCallback);
+        public Task.Backgroundable newTaskFor(
+            @NotNull final ICommand command,
+            @Nullable final ICommandStartedCallback commandStartedCallback,
+            @Nullable final ICommandFinishedCallback commandFinishedCallback) {
+            return new JobCommandExecutor(command, commandStartedCallback, commandFinishedCallback);
         }
     }
 }

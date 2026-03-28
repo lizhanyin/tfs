@@ -3,10 +3,12 @@
 
 package com.github.lizhanyin.tfs.client.framework.command;
 
-import org.eclipse.core.runtime.IProgressMonitor;
+import com.intellij.openapi.progress.ProgressIndicator;
 
 public interface CommandInitializationRunnable {
-    public void initialize(IProgressMonitor progressMonitor) throws Exception;
 
-    public void complete(IProgressMonitor progressMonitor);
+    public void initialize(ProgressIndicator progressMonitor) throws Exception;
+
+    public void complete(ProgressIndicator progressMonitor);
+
 }
