@@ -45,7 +45,7 @@ public class JobOptions {
 
     /**
      * The default {@link ICommandJobFactory}, which makes use of the
-     * {@link JobCommandExecutor} class to create new {@link Task} instances.
+     * {@link JobCommandAdapter} class to create new {@link Task} instances.
      */
     public static final ICommandJobFactory DEFAULT_COMMAND_TASK_FACTORY = new DefaultCommandTaskFactory();
 
@@ -198,7 +198,7 @@ public class JobOptions {
 
     /**
      * A default implementation of {@link ICommandJobFactory}, which creates new
-     * {@link JobCommandExecutor} instances to satisfy the
+     * {@link JobCommandAdapter} instances to satisfy the
      * {@link #newTaskFor(ICommand, ICommandStartedCallback, ICommandFinishedCallback)} method.
      */
     private static class DefaultCommandTaskFactory implements ICommandJobFactory {
@@ -207,7 +207,7 @@ public class JobOptions {
             @NotNull final ICommand command,
             @Nullable final ICommandStartedCallback commandStartedCallback,
             @Nullable final ICommandFinishedCallback commandFinishedCallback) {
-            return new JobCommandExecutor(command, commandStartedCallback, commandFinishedCallback);
+            return new JobCommandAdapter(command, commandStartedCallback, commandFinishedCallback);
         }
     }
 }

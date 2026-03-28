@@ -3,7 +3,7 @@
 
 package com.github.lizhanyin.tfs.client.framework.command;
 
-import org.eclipse.core.runtime.IProgressMonitor;
+import com.intellij.openapi.progress.ProgressIndicator;
 import com.github.lizhanyin.tfs.runtime.IStatus;
 
 import com.github.lizhanyin.tfs.client.framework.command.exception.CommandExceptionHandlerFactory;
@@ -13,23 +13,23 @@ import com.github.lizhanyin.tfs.client.framework.command.exception.ICommandExcep
  * <p>
  * An {@link ICommandExecutor} presents a service for running {@link ICommand}s.
  * Instead of calling
- * {@link ICommand#run(org.eclipse.core.runtime.IProgressMonitor)} directly,
+ * {@link ICommand#run(com.intellij.openapi.progress.ProgressIndicator)} directly,
  * client code can instead use an {@link ICommandExecutor}.
  * </p>
  *
  * <p>
- * The {@link CommandExecutorFactory} class provides easy access to commonly
+ * The { @link CommandExecutorFactory} class provides easy access to commonly
  * used {@link ICommandExecutor} implementations. It is recommended in many
- * cases that client code go through the {@link CommandExecutorFactory} to
+ * cases that client code go through the { @link CommandExecutorFactory} to
  * create new {@link ICommandExecutor}s.
  * </p>
  *
  * <p>
  * At a minimum, a command executor provides the following services:
  * <ul>
- * <li>Determining an {@link IProgressMonitor} to pass to
- * {@link ICommand#run(IProgressMonitor)}</li>
- * <li>Handling an exception thrown by {@link ICommand#run(IProgressMonitor)}
+ * <li>Determining an {@link ProgressIndicator} to pass to
+ * {@link ICommand#run(ProgressIndicator)}</li>
+ * <li>Handling an exception thrown by {@link ICommand#run(ProgressIndicator)}
  * and converting the exception into an {@link IStatus}</li>
  * </ul>
  * Many other services and context is possible. For instance:
@@ -38,7 +38,7 @@ import com.github.lizhanyin.tfs.client.framework.command.exception.ICommandExcep
  * some way - for instance, by logging statuses that indicate errors or showing
  * an error dialog.</li>
  * <li>Providing multithreaded running of a command. For instance, the
- * {@link ProgressMonitorDialogCommandExecutor} runs a command in a background
+ * { @link ProgressMonitorDialogCommandExecutor} runs a command in a background
  * thread while displaying a progress monitor on the UI thread.</li>
  * </ul>
  * </p>
@@ -67,7 +67,7 @@ import com.github.lizhanyin.tfs.client.framework.command.exception.ICommandExcep
  *
  * <p>
  * An executor handles exceptions thrown by
- * {@link ICommand#run(IProgressMonitor)} by using an
+ * {@link ICommand#run(ProgressIndicator)} by using an
  * {@link ICommandExceptionHandler} to convert the exception into an
  * {@link IStatus}. Executors will first attempt to use the
  * {@link ICommandExceptionHandler} returned by calling

@@ -16,64 +16,56 @@ import com.github.lizhanyin.tfs.runtime.IStatus;
 import com.github.lizhanyin.tfs.runtime.Status;
 
 /**
- * A {@link ICommandExecutor} that understands that IntelliJ IDEA has a UI, and thus
+ * A {@link JobCommandExecutor} that understands that IntelliJ IDEA has a UI, and thus
  * can make use of displaying warnings, error dialogs, etc.
- * <p>
- * This executor uses IntelliJ's {@link ProgressManager} to run commands as
- * background tasks with progress indicators.
- * </p>
- */
-
-/**
- * A {@link JobCommandExecutor} that understands that Eclipse has a UI, and thus
- * can make use of displaying warnings, etc.
  * <p>
  * <em>
  * Always prefer {@link UIJobCommandExecutor} to {@link JobCommandExecutor} in a
  * graphical context.
  * </em>
+ * </p>
  * <p>
  * An important feature of this extension to {@link JobCommandExecutor} is its
- * ability to process UI thread messages while waiting for a job to finish, when
- * the thread waiting on the job is the UI thread (see the implementation in
- * {@link UIJobFutureStatus} ). The base class, {@link JobCommandExecutor}, does
- * not offer this feature. It waits with a simple blocking {@link Job#join()}
- * which prevents the running {@link Job} from doing work on the UI thread (for
- * example, with {@link Display#syncExec(Runnable))}.
+ * ability to process UI thread messages while waiting for a task to finish, when
+ * the thread waiting on the task is the UI thread (see the implementation in
+ * {@link UIJobFutureStatus}). The base class, {@link JobCommandExecutor}, does
+ * not offer this feature. It waits with a simple blocking join
+ * which prevents the running {@link Task.Backgroundable} from doing work on the UI thread.
+ * </p>
  */
 public class UIJobCommandExecutor extends JobCommandExecutor {
-    public UIJobCommandExecutor(final Shell shell) {
-        this(shell, null);
+    public UIJobCommandExecutor(@NotNull final Project project) {
+        this(project, null);
     }
 
-    public UIJobCommandExecutor(final Shell shell, final JobOptions jobOptions) {
+    public UIJobCommandExecutor(@NotNull final Project project, @Nullable final JobOptions jobOptions) {
         super(createJobOptions(jobOptions));
 
-        Check.notNull(shell, "shell"); //$NON-NLS-1$
-        setCommandFinishedCallback(UICommandFinishedCallbackFactory.getDefaultCallback(shell));
+        Check.notNull(project, "project"); //$NON-NLS-1$
+        setCommandFinishedCallback(UICommandFinishedCallbackFactory.getDefaultCallback(project));
     }
 
-    private static JobOptions createJobOptions(final JobOptions jobOptions) {
+    private static JobOptions createJobOptions(@Nullable final JobOptions jobOptions) {
         final JobOptions newJobOptions = new JobOptions(jobOptions);
-        newJobOptions.setCommandJobFactory(new UICommandJobFactory());
+        newJobOptions.setCommandTaskFactory(new UICommandTaskFactory());
 
         return newJobOptions;
     }
 
     /**
      * A default implementation of {@link ICommandJobFactory}, which creates new
-     * {@link JobCommandAdapter} instances to satisfy the
-     * {@link #newJobFor(ICommand, ICommandFinishedCallback)} method.
+     * {@link UIJobCommandAdapter} instances to satisfy the
+     * {@link #newTaskFor(ICommand, ICommandStartedCallback, ICommandFinishedCallback)} method.
      */
-    private static class UICommandJobFactory implements ICommandJobFactory {
+    private static class UICommandTaskFactory implements ICommandJobFactory {
         /**
          * {@inheritDoc}
          */
         @Override
-        public Job newJobFor(
-                final ICommand command,
-                final ICommandStartedCallback commandStartedCallback,
-                final ICommandFinishedCallback commandFinishedCallback) {
+        public Task.Backgroundable newTaskFor(
+                @NotNull final ICommand command,
+                @Nullable final ICommandStartedCallback commandStartedCallback,
+                @Nullable final ICommandFinishedCallback commandFinishedCallback) {
             return new UIJobCommandAdapter(command, commandStartedCallback, commandFinishedCallback);
         }
     }

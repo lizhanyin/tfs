@@ -9,7 +9,6 @@ import org.jetbrains.annotations.Nullable;
 
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
-import com.intellij.openapi.project.Project;
 
 import com.github.lizhanyin.tfs.client.framework.command.ICommand;
 import com.github.lizhanyin.tfs.client.framework.command.ICommandFinishedCallback;
@@ -19,10 +18,10 @@ import com.github.lizhanyin.tfs.runtime.Status;
 
 /**
  * <p>
- * This class adapts an instance of {@link ICommand} to the {@link Job} class.
+ * This class adapts an instance of {@link ICommand} to the {@link Task.Backgroundable} class.
  * It is expected to be used with UI-aware CommandFinishedCallbacks, that are
  * capable of raising error dialogs, etc. Thus the status returned is *ALWAYS*
- * {@link IStatus#OK}. This prevents Eclipse from raising another error dialog
+ * {@link IStatus#OK}. This prevents IntelliJ IDEA from raising another error dialog
  * erroneously.
  * </p>
  *
@@ -30,11 +29,11 @@ import com.github.lizhanyin.tfs.runtime.Status;
  */
 public class UIJobCommandAdapter extends JobCommandAdapter {
     private final Object statusLock = new Object();
-    private IStatus status;
+    private IStatus commandStatus;
 
     /**
      * Creates a new {@link JobCommandAdapter}, adapting the given
-     * {@link ICommand} to the {@link Job} class.
+     * {@link ICommand} to the {@link Task.Backgroundable} class.
      *
      * @param command
      *        the {@link ICommand} to adapt (must not be <code>null</code>)
@@ -46,35 +45,39 @@ public class UIJobCommandAdapter extends JobCommandAdapter {
      *        the command has finished (may be <code>null</code>)
      */
     public UIJobCommandAdapter(
-            final ICommand command,
-            final ICommandStartedCallback startedCallback,
-            final ICommandFinishedCallback finishedCallback) {
+            @NotNull final ICommand command,
+            @Nullable final ICommandStartedCallback startedCallback,
+            @Nullable final ICommandFinishedCallback finishedCallback) {
         super(command, startedCallback, finishedCallback);
     }
 
     /**
-     * Note: to prevent Eclipse from raising spurious failure dialogs, the
+     * Note: to prevent IntelliJ IDEA from raising spurious failure dialogs, the
      * status return is *ALWAYS* {@link IStatus#OK}. To get the status of the
      * command execution, call {@link #getCommandStatus()}.
      */
     @Override
-    protected IStatus run(final IProgressMonitor monitor) {
-        final IStatus status = super.run(monitor);
+    public void run(@NotNull final ProgressIndicator indicator) {
+        super.run(indicator);
 
         synchronized (statusLock) {
-            this.status = status;
+            this.commandStatus = getStatus();
         }
-
-        return Status.OK_STATUS;
     }
 
+    /**
+     * Gets the status of the command execution.
+     *
+     * @return the command execution status
+     */
+    @NotNull
     public IStatus getCommandStatus() {
         /*
          * Synchronized for visibility - the thread calling run() will be a
          * background thread.
          */
         synchronized (statusLock) {
-            return status;
+            return commandStatus != null ? commandStatus : Status.OK_STATUS;
         }
     }
 }
