@@ -24,8 +24,8 @@ class CredentialsDialog(
 ) : DialogWrapper(parent, false) {
 
     enum class CredentialType(private val key: String) {
-        USER_PASSWORD("dialog.credentials.type.userPassword"),
-        PERSONAL_ACCESS_TOKEN("dialog.credentials.type.pat");
+        USER_PASSWORD("CredentialsDialog.type.userPassword"),
+        PERSONAL_ACCESS_TOKEN("CredentialsDialog.type.pat");
 
         val displayName: String get() = TfsBundle.message(key)
 
@@ -43,7 +43,7 @@ class CredentialsDialog(
     private var password: String? = null
 
     init {
-        title = TfsBundle.message("dialog.credentials.title")
+        title = TfsBundle.message("CredentialsDialog.title")
         init()
     }
 
@@ -51,7 +51,7 @@ class CredentialsDialog(
         val builder = FormBuilder.createFormBuilder()
 
         // 提示信息
-        builder.addComponent(JLabel(TfsBundle.message("dialog.credentials.prompt", serverUrl)))
+        builder.addComponent(JLabel(TfsBundle.message("CredentialsDialog.prompt", serverUrl)))
         builder.addSeparator()
 
         // 凭证类型选择
@@ -71,18 +71,18 @@ class CredentialsDialog(
 
         typePanel.add(userPasswordRadio)
         typePanel.add(patRadio)
-        builder.addLabeledComponent(TfsBundle.message("dialog.credentials.label.type"), typePanel)
+        builder.addLabeledComponent(TfsBundle.message("CredentialsDialog.label.type"), typePanel)
 
         // 用户名
         usernameField = JBTextField()
-        builder.addLabeledComponent(TfsBundle.message("dialog.credentials.label.username"), usernameField)
+        builder.addLabeledComponent(TfsBundle.message("CredentialsDialog.label.username"), usernameField)
 
         // 密码
         passwordField = JBPasswordField()
-        builder.addLabeledComponent(TfsBundle.message("dialog.credentials.label.password"), passwordField)
+        builder.addLabeledComponent(TfsBundle.message("CredentialsDialog.label.password"), passwordField)
 
         // 保存密码
-        savePasswordCheckbox = JCheckBox(TfsBundle.message("dialog.credentials.savePassword"), allowSavePassword)
+        savePasswordCheckbox = JCheckBox(TfsBundle.message("CredentialsDialog.savePassword"), allowSavePassword)
         savePasswordCheckbox.isVisible = allowSavePassword
         builder.addComponent(savePasswordCheckbox)
 
@@ -111,13 +111,13 @@ class CredentialsDialog(
         password = String(passwordField.password)
 
         if (credentialType == CredentialType.USER_PASSWORD && username.isNullOrEmpty()) {
-            JOptionPane.showMessageDialog(contentPane, TfsBundle.message("dialog.credentials.error.emptyUsername"), TfsBundle.message("dialog.hint"), JOptionPane.WARNING_MESSAGE)
+            JOptionPane.showMessageDialog(contentPane, TfsBundle.message("CredentialsDialog.error.emptyUsername"), TfsBundle.message("CredentialsDialog.hint"), JOptionPane.WARNING_MESSAGE)
             return
         }
 
         if (password.isNullOrEmpty()) {
-            val fieldName = if (credentialType == CredentialType.USER_PASSWORD) TfsBundle.message("dialog.credentials.field.password") else TfsBundle.message("dialog.credentials.field.token")
-            JOptionPane.showMessageDialog(contentPane, TfsBundle.message("dialog.credentials.error.emptyPassword", fieldName), TfsBundle.message("dialog.hint"), JOptionPane.WARNING_MESSAGE)
+            val fieldName = if (credentialType == CredentialType.USER_PASSWORD) TfsBundle.message("CredentialsDialog.field.password") else TfsBundle.message("CredentialsDialog.field.token")
+            JOptionPane.showMessageDialog(contentPane, TfsBundle.message("CredentialsDialog.error.emptyPassword", fieldName), TfsBundle.message("CredentialsDialog.hint"), JOptionPane.WARNING_MESSAGE)
             return
         }
 

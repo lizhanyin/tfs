@@ -25,7 +25,7 @@ import javax.swing.SwingUtilities
  * 团队项目选择步骤
  */
 class TeamProjectSelectionStep(context: ImportProjectContext) :
-    AbstractWizardStep(STEP_ID, TfsBundle.message("wizard.step.teamProject.title"), context) {
+    AbstractWizardStep(STEP_ID, TfsBundle.message("TeamProjectSelectionStep.title"), context) {
 
     companion object {
         private const val STEP_ID = "team-project-selection"
@@ -44,9 +44,9 @@ class TeamProjectSelectionStep(context: ImportProjectContext) :
         // 服务器信息
         serverInfoLabel = JLabel(" ")
         updateServerInfo()
-        builder.addLabeledComponent(TfsBundle.message("wizard.label.connectedTo"), serverInfoLabel)
+        builder.addLabeledComponent(TfsBundle.message("TeamProjectSelectionStep.label.connectedTo"), serverInfoLabel)
         builder.addSeparator()
-        builder.addLabeledComponent(TfsBundle.message("wizard.label.teamProject"), createTeamProjectPanel())
+        builder.addLabeledComponent(TfsBundle.message("TeamProjectSelectionStep.label.teamProject"), createTeamProjectPanel())
         builder.addSeparator()
         builder.addComponent(createStatusPanel())
 
@@ -87,7 +87,7 @@ class TeamProjectSelectionStep(context: ImportProjectContext) :
 
         val buttonPanel = JPanel(FlowLayout(FlowLayout.LEFT, 5, 0))
 
-        refreshButton = JButton(TfsBundle.message("wizard.button.refresh"))
+        refreshButton = JButton(TfsBundle.message("TeamProjectSelectionStep.button.refresh"))
         refreshButton.addActionListener { loadTeamProjects() }
         buttonPanel.add(refreshButton)
 
@@ -101,7 +101,7 @@ class TeamProjectSelectionStep(context: ImportProjectContext) :
      */
     private fun createStatusPanel(): JComponent {
         val panel = JPanel(BorderLayout())
-        statusLabel = JBLabel(TfsBundle.message("wizard.status.clickRefresh"))
+        statusLabel = JBLabel(TfsBundle.message("TeamProjectSelectionStep.status.clickRefresh"))
         panel.add(statusLabel, BorderLayout.CENTER)
         return panel
     }
@@ -111,19 +111,19 @@ class TeamProjectSelectionStep(context: ImportProjectContext) :
      */
     private fun loadTeamProjects() {
         if (!context.isServerConfigured()) {
-            statusLabel.text = TfsBundle.message("wizard.error.configureServerFirst")
+            statusLabel.text = TfsBundle.message("TeamProjectSelectionStep.error.configureServerFirst")
             statusLabel.foreground = Color.RED
             return
         }
 
-        statusLabel.text = TfsBundle.message("wizard.status.loadingTeamProjects")
+        statusLabel.text = TfsBundle.message("TeamProjectSelectionStep.status.loading")
         statusLabel.foreground = Color.BLACK
         refreshButton.isEnabled = false
         teamProjectComboBox.isEnabled = false
 
-        ProgressManager.getInstance().run(object : Task.Backgroundable(null, TfsBundle.message("wizard.progress.loadingTeamProjects"), true) {
+        ProgressManager.getInstance().run(object : Task.Backgroundable(null, TfsBundle.message("TeamProjectSelectionStep.progress.loading"), true) {
             override fun run(indicator: ProgressIndicator) {
-                indicator.text = TfsBundle.message("wizard.progress.connectingToTfs")
+                indicator.text = TfsBundle.message("TeamProjectSelectionStep.progress.connecting")
                 indicator.isIndeterminate = true
 
                 try {
@@ -136,10 +136,10 @@ class TeamProjectSelectionStep(context: ImportProjectContext) :
                         updateTeamProjectComboBox()
 
                         if (projects.isEmpty()) {
-                            statusLabel.text = TfsBundle.message("wizard.status.noTeamProjects")
+                            statusLabel.text = TfsBundle.message("TeamProjectSelectionStep.status.noResults")
                             statusLabel.foreground = Color.ORANGE
                         } else {
-                            statusLabel.text = TfsBundle.message("wizard.status.teamProjectsLoaded", projects.size)
+                            statusLabel.text = TfsBundle.message("TeamProjectSelectionStep.status.loaded", projects.size)
                             statusLabel.foreground = Color(0, 128, 0)
                         }
 
@@ -149,7 +149,7 @@ class TeamProjectSelectionStep(context: ImportProjectContext) :
 
                 } catch (e: Exception) {
                     SwingUtilities.invokeLater {
-                        statusLabel.text = TfsBundle.message("wizard.error.loadingFailed", e.message ?: "")
+                        statusLabel.text = TfsBundle.message("TeamProjectSelectionStep.error.loadingFailed", e.message ?: "")
                         statusLabel.foreground = Color.RED
                         refreshButton.isEnabled = true
                     }

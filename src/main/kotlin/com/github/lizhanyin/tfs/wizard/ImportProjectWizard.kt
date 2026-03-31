@@ -25,7 +25,7 @@ import javax.swing.*
 class ImportProjectWizard(@field:Nullable private val project: Project?) : DialogWrapper(project, false) {
 
     companion object {
-        const val TITLE = "wizard.title"
+        const val TITLE = "ImportProjectWizard.title"
     }
 
     val context = ImportProjectContext()
@@ -48,7 +48,7 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
 
     init {
         setTitle(TfsBundle.message(TITLE))
-        setOKButtonText(TfsBundle.message("wizard.button.import"))
+        setOKButtonText(TfsBundle.message("ImportProjectWizard.button.import"))
         init()
     }
 
@@ -78,13 +78,13 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
         // 导航按钮面板
         val buttonPanel = JPanel(FlowLayout(FlowLayout.RIGHT, 5, 0))
 
-        previousButton = JButton(TfsBundle.message("wizard.button.previous")).apply {
+        previousButton = JButton(TfsBundle.message("ImportProjectWizard.button.previous")).apply {
             addActionListener { goToPreviousStep() }
             isEnabled = false
         }
         buttonPanel.add(previousButton)
 
-        nextButton = JButton(TfsBundle.message("wizard.button.next")).apply {
+        nextButton = JButton(TfsBundle.message("ImportProjectWizard.button.next")).apply {
             addActionListener { goToNextStep() }
         }
         buttonPanel.add(nextButton)
@@ -95,7 +95,7 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
         buttonPanel.add(finishButton)
 
         // 放弃按钮
-        setCancelButtonText(TfsBundle.message("wizard.button.cancel"))
+        setCancelButtonText(TfsBundle.message("ImportProjectWizard.button.cancel"))
         val cancelButton = createJButtonForAction(cancelAction)
         buttonPanel.add(cancelButton)
 
@@ -115,7 +115,7 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
         stepContainer.add(currentStepComponent, BorderLayout.CENTER)
 
         // 更新步骤标题
-        stepTitleLabel.text = TfsBundle.message("wizard.step.progress", currentStepIndex + 1, steps.size, step.title ?: "")
+        stepTitleLabel.text = TfsBundle.message("ImportProjectWizard.step.progress", currentStepIndex + 1, steps.size, step.title ?: "")
 
         // 更新按钮状态
         updateButtonState()
@@ -142,7 +142,7 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
 
         // 完成按钮：只在最后一步启用
         setOKActionEnabled(isLastStep)
-        setOKButtonText(TfsBundle.message("wizard.button.finish"))
+        setOKButtonText(TfsBundle.message("ImportProjectWizard.button.finish"))
     }
 
     /**
@@ -163,8 +163,8 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
         if (!currentStep.isComplete) {
             Messages.showWarningDialog(
                 contentPanel,
-                TfsBundle.message("wizard.error.incompleteStep"),
-                TfsBundle.message("wizard.error.cannotContinue")
+                TfsBundle.message("ImportProjectWizard.error.incompleteStep"),
+                TfsBundle.message("ImportProjectWizard.error.cannotContinue")
             )
             return
         }
@@ -187,8 +187,8 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
         if (!currentStep.isComplete) {
             Messages.showWarningDialog(
                 contentPanel,
-                TfsBundle.message("wizard.error.incompleteStep"),
-                TfsBundle.message("wizard.error.cannotImport")
+                TfsBundle.message("ImportProjectWizard.error.incompleteStep"),
+                TfsBundle.message("ImportProjectWizard.error.cannotImport")
             )
             return
         }
@@ -206,9 +206,9 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
      * 执行项目导入
      */
     private fun executeImport() {
-        ProgressManager.getInstance().run(object : Task.Modal(project, TfsBundle.message("wizard.progress.importing"), true) {
+        ProgressManager.getInstance().run(object : Task.Modal(project, TfsBundle.message("ImportProjectWizard.progress.importing"), true) {
             override fun run(@NotNull indicator: ProgressIndicator) {
-                indicator.text = TfsBundle.message("wizard.progress.importingFromTfs")
+                indicator.text = TfsBundle.message("ImportProjectWizard.progress.importingFromTfs")
                 indicator.isIndeterminate = false
                 indicator.fraction = 0.0
 
@@ -230,8 +230,8 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
                         close(OK_EXIT_CODE)
                         // 再显示成功消息
                         Messages.showInfoMessage(
-                            TfsBundle.message("wizard.success.message", context.serverUrl ?: "", context.teamProject ?: "", context.localPath ?: ""),
-                            TfsBundle.message("wizard.success.title")
+                            TfsBundle.message("ImportProjectWizard.success.message", context.serverUrl ?: "", context.teamProject ?: "", context.localPath ?: ""),
+                            TfsBundle.message("ImportProjectWizard.success.title")
                         )
                     }
 
@@ -242,8 +242,8 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
                     SwingUtilities.invokeLater {
                         Messages.showErrorDialog(
                             contentPanel,
-                            TfsBundle.message("wizard.error.importFailed", e.message ?: ""),
-                            TfsBundle.message("wizard.error.importFailed.title")
+                            TfsBundle.message("ImportProjectWizard.error.importFailed", e.message ?: ""),
+                            TfsBundle.message("ImportProjectWizard.error.importFailed.title")
                         )
                     }
                 }

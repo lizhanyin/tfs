@@ -50,8 +50,8 @@ class ImportProjectContext {
      */
     enum class AuthType(private val key: String) {
 //        NTLM("Windows 集成认证 (NTLM)"),
-        BASIC("wizard.auth.basic"),
-        PAT("wizard.auth.pat");
+        BASIC("ImportProjectContext.auth.basic"),
+        PAT("ImportProjectContext.auth.pat");
 
         val displayName: String get() = TfsBundle.message(key)
 

@@ -31,7 +31,7 @@ import javax.swing.tree.TreeNode
  * 项目选择步骤
  */
 class ProjectSelectionStep(context: ImportProjectContext) :
-    AbstractWizardStep(STEP_ID, TfsBundle.message("wizard.step.projectSelection.title"), context) {
+    AbstractWizardStep(STEP_ID, TfsBundle.message("ProjectSelectionStep.title"), context) {
 
     companion object {
         private const val STEP_ID = "project-selection"
@@ -55,15 +55,15 @@ class ProjectSelectionStep(context: ImportProjectContext) :
             null,
             FileChooserDescriptorFactory.createSingleFolderDescriptor()
         )
-        builder.addLabeledComponent(TfsBundle.message("wizard.label.localPath"), localPathField)
+        builder.addLabeledComponent(TfsBundle.message("ProjectSelectionStep.label.localPath"), localPathField)
 
         builder.addSeparator()
 
         // 项目树标签
         val headerPanel = JPanel(BorderLayout())
-        headerPanel.add(JBLabel(TfsBundle.message("wizard.label.selectProjects")), BorderLayout.WEST)
+        headerPanel.add(JBLabel(TfsBundle.message("ProjectSelectionStep.label.selectProjects")), BorderLayout.WEST)
 
-        refreshButton = JButton(TfsBundle.message("wizard.button.refresh"))
+        refreshButton = JButton(TfsBundle.message("ProjectSelectionStep.button.refresh"))
         refreshButton.addActionListener { loadProjects() }
         headerPanel.add(refreshButton, BorderLayout.EAST)
 
@@ -78,7 +78,7 @@ class ProjectSelectionStep(context: ImportProjectContext) :
         builder.addSeparator()
 
         // 状态标签
-        statusLabel = JBLabel(TfsBundle.message("wizard.status.loadingProjects"))
+        statusLabel = JBLabel(TfsBundle.message("ProjectSelectionStep.status.loading"))
         builder.addComponent(statusLabel)
 
         val panel = builder.panel
@@ -125,18 +125,18 @@ class ProjectSelectionStep(context: ImportProjectContext) :
      */
     private fun loadProjects() {
         if (!context.isTeamProjectSelected()) {
-            statusLabel.text = TfsBundle.message("wizard.error.selectTeamProjectFirst")
+            statusLabel.text = TfsBundle.message("ProjectSelectionStep.error.selectTeamProjectFirst")
             statusLabel.foreground = JBColor.RED
             return
         }
 
-        statusLabel.text = TfsBundle.message("wizard.status.loadingProjects")
+        statusLabel.text = TfsBundle.message("ProjectSelectionStep.status.loading")
         statusLabel.foreground = Color.BLACK
         refreshButton.isEnabled = false
 
-        ProgressManager.getInstance().run(object : Task.Backgroundable(null, TfsBundle.message("wizard.progress.loadingProjects"), false) {
+        ProgressManager.getInstance().run(object : Task.Backgroundable(null, TfsBundle.message("ProjectSelectionStep.progress.loading"), false) {
             override fun run(indicator: ProgressIndicator) {
-                indicator.text = TfsBundle.message("wizard.progress.fetchingProjects")
+                indicator.text = TfsBundle.message("ProjectSelectionStep.progress.fetching")
                 indicator.isIndeterminate = true
 
                 try {
@@ -164,10 +164,10 @@ class ProjectSelectionStep(context: ImportProjectContext) :
 
                         val itemCount = countLeafNodes(rootTreeNode)
                         if (itemCount == 0) {
-                            statusLabel.text = TfsBundle.message("wizard.status.noProjects")
+                            statusLabel.text = TfsBundle.message("ProjectSelectionStep.status.noResults")
                             statusLabel.foreground = JBColor.ORANGE
                         } else {
-                            statusLabel.text = TfsBundle.message("wizard.status.projectsLoaded", itemCount)
+                            statusLabel.text = TfsBundle.message("ProjectSelectionStep.status.loaded", itemCount)
                             statusLabel.foreground = Color(0, 128, 0)
                         }
                         refreshButton.isEnabled = true
@@ -175,7 +175,7 @@ class ProjectSelectionStep(context: ImportProjectContext) :
 
                 } catch (e: Exception) {
                     SwingUtilities.invokeLater {
-                        statusLabel.text = TfsBundle.message("wizard.error.loadingFailed", e.message ?: "")
+                        statusLabel.text = TfsBundle.message("ProjectSelectionStep.error.loadingFailed", e.message ?: "")
                         statusLabel.foreground = JBColor.RED
                         refreshButton.isEnabled = true
                     }

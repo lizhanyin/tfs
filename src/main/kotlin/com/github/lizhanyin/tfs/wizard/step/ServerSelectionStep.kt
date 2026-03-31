@@ -23,7 +23,7 @@ import javax.swing.SwingUtilities
  * 第一步：选择要连接的服务器
  */
 class ServerSelectionStep(context: ImportProjectContext) :
-    AbstractWizardStep(STEP_ID, TfsBundle.message("wizard.step.serverSelection.title"), context) {
+    AbstractWizardStep(STEP_ID, TfsBundle.message("ServerSelectionStep.title"), context) {
 
     companion object {
         private const val STEP_ID = "server-selection"
@@ -39,11 +39,11 @@ class ServerSelectionStep(context: ImportProjectContext) :
         val builder = FormBuilder.createFormBuilder()
 
         // 步骤说明
-        builder.addComponent(JLabel(TfsBundle.message("wizard.step.serverSelection.description")))
+        builder.addComponent(JLabel(TfsBundle.message("ServerSelectionStep.description")))
         builder.addSeparator()
 
         // 服务器选择面板
-        builder.addLabeledComponent(TfsBundle.message("wizard.label.tfsServer"), createServerPanel())
+        builder.addLabeledComponent(TfsBundle.message("ServerSelectionStep.label.tfsServer"), createServerPanel())
 
         builder.addComponent(statusLabel)
 
@@ -77,7 +77,7 @@ class ServerSelectionStep(context: ImportProjectContext) :
         panel.add(serverComboBox, BorderLayout.CENTER)
 
         // 服务器管理按钮
-        val manageButton = JButton(TfsBundle.message("wizard.button.manageServers"))
+        val manageButton = JButton(TfsBundle.message("ServerSelectionStep.button.manageServers"))
         manageButton.addActionListener { showManageServersDialog() }
         panel.add(manageButton, BorderLayout.EAST)
 
@@ -121,7 +121,7 @@ class ServerSelectionStep(context: ImportProjectContext) :
             context.domain = selected.domain
 
             // 显示连接信息
-            val credStatus = if (!selected.password.isNullOrEmpty()) TfsBundle.message("wizard.status.credentialsSaved") else ""
+            val credStatus = if (!selected.password.isNullOrEmpty()) TfsBundle.message("ServerSelectionStep.status.credentialsSaved") else ""
             statusLabel.text = credStatus
             statusLabel.foreground = JBColor.GRAY
         } else {

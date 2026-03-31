@@ -53,7 +53,7 @@ class AddServerDialog(
     init {
         // 确保本地库已初始化
         TfsNativeLibraryInitializer.init()
-        title = if (editingItem == null) TfsBundle.message("dialog.addServer.title.add") else TfsBundle.message("dialog.addServer.title.edit")
+        title = if (editingItem == null) TfsBundle.message("AddServerDialog.title.add") else TfsBundle.message("AddServerDialog.title.edit")
         init()
     }
 
@@ -61,14 +61,14 @@ class AddServerDialog(
         val builder = FormBuilder.createFormBuilder()
 
         // 名称或URL输入
-        builder.addComponent(JLabel(TfsBundle.message("dialog.addServer.label.nameOrUrl")))
+        builder.addComponent(JLabel(TfsBundle.message("AddServerDialog.label.nameOrUrl")))
         nameOrUrlField = JBTextField()
-        nameOrUrlField.emptyText.text = TfsBundle.message("dialog.addServer.placeholder.nameOrUrl")
+        nameOrUrlField.emptyText.text = TfsBundle.message("AddServerDialog.placeholder.nameOrUrl")
         builder.addComponent(nameOrUrlField)
 
         // 连接信息面板
         val connectionInfoPanel = JPanel().apply {
-            border = BorderFactory.createTitledBorder(TfsBundle.message("dialog.addServer.connectionInfo"))
+            border = BorderFactory.createTitledBorder(TfsBundle.message("AddServerDialog.connectionInfo"))
             layout = BorderLayout(5, 5)
         }
 
@@ -76,11 +76,11 @@ class AddServerDialog(
 
         // 路径
         pathField = JBTextField("tfs")
-        connectionBuilder.addLabeledComponent(TfsBundle.message("dialog.addServer.label.path"), pathField)
+        connectionBuilder.addLabeledComponent(TfsBundle.message("AddServerDialog.label.path"), pathField)
 
         // 端口
         portField = JBTextField("8080")
-        connectionBuilder.addLabeledComponent(TfsBundle.message("dialog.addServer.label.port"), portField)
+        connectionBuilder.addLabeledComponent(TfsBundle.message("AddServerDialog.label.port"), portField)
 
         // 协议选择
         val protocolPanel = JPanel(FlowLayout(FlowLayout.LEFT, 10, 0))
@@ -91,7 +91,7 @@ class AddServerDialog(
         protocolGroup.add(httpsRadio)
         protocolPanel.add(httpRadio)
         protocolPanel.add(httpsRadio)
-        connectionBuilder.addLabeledComponent(TfsBundle.message("dialog.addServer.label.protocol"), protocolPanel)
+        connectionBuilder.addLabeledComponent(TfsBundle.message("AddServerDialog.label.protocol"), protocolPanel)
 
         val innerPanel = connectionBuilder.panel
         innerPanel.border = JBUI.Borders.empty(0, 10)
@@ -105,12 +105,12 @@ class AddServerDialog(
 
         // 测试和停止按钮面板
         val buttonPanel = JPanel(FlowLayout(FlowLayout.LEFT, 5, 0))
-        testButton = JButton(TfsBundle.message("dialog.addServer.button.test")).apply { addActionListener { testConnection() } }
-        stopButton = JButton(TfsBundle.message("dialog.addServer.button.stop")).apply { isEnabled = false; addActionListener { stopTesting() } }
+        testButton = JButton(TfsBundle.message("AddServerDialog.button.test")).apply { addActionListener { testConnection() } }
+        stopButton = JButton(TfsBundle.message("AddServerDialog.button.stop")).apply { isEnabled = false; addActionListener { stopTesting() } }
         buttonPanel.add(testButton)
         buttonPanel.add(stopButton)
         previewPanel.add(buttonPanel, BorderLayout.EAST)
-        builder.addLabeledComponent(TfsBundle.message("dialog.addServer.label.preview"), previewPanel)
+        builder.addLabeledComponent(TfsBundle.message("AddServerDialog.label.preview"), previewPanel)
 
         // 状态标签
         statusLabel = JLabel(" ")
@@ -152,7 +152,7 @@ class AddServerDialog(
         val panel = JPanel(BorderLayout())
 
         val leftPanel = JPanel(FlowLayout(FlowLayout.LEFT))
-        val credentialsButton = JButton(TfsBundle.message("dialog.addServer.button.credentials")).apply { addActionListener { showCredentialsDialog() } }
+        val credentialsButton = JButton(TfsBundle.message("AddServerDialog.button.credentials")).apply { addActionListener { showCredentialsDialog() } }
         leftPanel.add(credentialsButton)
 
         val rightPanel = JPanel(FlowLayout(FlowLayout.RIGHT))
@@ -287,7 +287,7 @@ class AddServerDialog(
     private fun testConnection() {
         val url = buildUrl()
         if (url.isEmpty() || url == "http://" || url == "https://") {
-            statusLabel.text = TfsBundle.message("dialog.addServer.error.emptyUrl")
+            statusLabel.text = TfsBundle.message("AddServerDialog.error.emptyUrl")
             statusLabel.foreground = JBColor.RED
             return
         }
@@ -296,8 +296,8 @@ class AddServerDialog(
         if (savedPassword.isNullOrEmpty()) {
             val result = JOptionPane.showConfirmDialog(
                 contentPane,
-                TfsBundle.message("dialog.addServer.confirm.noCredentials"),
-                TfsBundle.message("dialog.confirm"),
+                TfsBundle.message("AddServerDialog.confirm.noCredentials"),
+                TfsBundle.message("AddServerDialog.confirm"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.WARNING_MESSAGE
             )
@@ -306,18 +306,18 @@ class AddServerDialog(
             }
         }
 
-        statusLabel.text = TfsBundle.message("dialog.addServer.status.testing")
+        statusLabel.text = TfsBundle.message("AddServerDialog.status.testing")
         statusLabel.foreground = JBColor.GRAY
         testButton.isEnabled = false
         stopButton.isEnabled = true
         testingInProgress = true
 
-        ProgressManager.getInstance().run(object : Task.Backgroundable(null, TfsBundle.message("dialog.addServer.progress.testing"), true) {
+        ProgressManager.getInstance().run(object : Task.Backgroundable(null, TfsBundle.message("AddServerDialog.progress.testing"), true) {
             private var success = false
             private var errorMessage: String? = null
 
             override fun run(@NotNull indicator: ProgressIndicator) {
-                indicator.text = TfsBundle.message("dialog.addServer.progress.connectingTo", url)
+                indicator.text = TfsBundle.message("AddServerDialog.progress.connectingTo", url)
                 indicator.isIndeterminate = true
 
                 try {
@@ -346,11 +346,11 @@ class AddServerDialog(
             override fun onSuccess() {
                 finishTesting()
                 if (success) {
-                    statusLabel.text = TfsBundle.message("dialog.addServer.status.success")
+                    statusLabel.text = TfsBundle.message("AddServerDialog.status.success")
                     statusLabel.foreground = Color(0, 128, 0)
                     connectionTested = true
                 } else {
-                    statusLabel.text = TfsBundle.message("dialog.addServer.status.failed")
+                    statusLabel.text = TfsBundle.message("AddServerDialog.status.failed")
                     statusLabel.foreground = JBColor.RED
                 }
             }
@@ -358,7 +358,7 @@ class AddServerDialog(
             override fun onThrowable(@NotNull error: Throwable) {
                 finishTesting()
                 error.printStackTrace()
-                statusLabel.text = TfsBundle.message("dialog.addServer.status.connectionError", error.message ?: "")
+                statusLabel.text = TfsBundle.message("AddServerDialog.status.connectionError", error.message ?: "")
                 statusLabel.foreground = JBColor.RED
             }
 
@@ -375,7 +375,7 @@ class AddServerDialog(
         testingInProgress = false
         ProgressManager.getInstance().progressIndicator?.cancel()
         finishTesting()
-        statusLabel.text = TfsBundle.message("dialog.addServer.status.cancelled")
+        statusLabel.text = TfsBundle.message("AddServerDialog.status.cancelled")
         statusLabel.foreground = JBColor.GRAY
     }
 
@@ -393,15 +393,15 @@ class AddServerDialog(
     override fun doOKAction() {
         val url = buildUrl()
         if (url.isEmpty() || url == "http://" || url == "https://") {
-            JOptionPane.showMessageDialog(contentPane, TfsBundle.message("dialog.addServer.error.emptyUrl"), TfsBundle.message("dialog.hint"), JOptionPane.WARNING_MESSAGE)
+            JOptionPane.showMessageDialog(contentPane, TfsBundle.message("AddServerDialog.error.emptyUrl"), TfsBundle.message("AddServerDialog.hint"), JOptionPane.WARNING_MESSAGE)
             return
         }
 
         if (!connectionTested) {
             val result = JOptionPane.showConfirmDialog(
                 contentPane,
-                TfsBundle.message("dialog.addServer.confirm.notTested"),
-                TfsBundle.message("dialog.confirm"),
+                TfsBundle.message("AddServerDialog.confirm.notTested"),
+                TfsBundle.message("AddServerDialog.confirm"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.WARNING_MESSAGE
             )
