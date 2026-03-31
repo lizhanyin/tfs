@@ -25,7 +25,7 @@ import java.util.List;
 
 /**
  * TFS 连接服务实现
- *
+ * <p>
  * 参考 Eclipse 插件的认证流程，支持 On-Premises TFS 连接。
  * 可以使用 ImportProjectContext 或存储的 ServerConfig 进行连接。
  *
@@ -263,7 +263,7 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
     private static @NotNull List<String> getUrlsFromConfig(@NotNull TfsServerConfiguration.ServerConfig serverConfig) {
         String serverUrl = serverConfig.getUrl();
 
-        if (serverUrl == null || serverUrl.isEmpty()) {
+        if (serverUrl.isEmpty()) {
             throw new IllegalArgumentException("服务器 URL 不能为空");
         }
 
@@ -273,7 +273,7 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
         urlsToTry.add(serverUrl);
 
         String collection = serverConfig.getCollection();
-        if (collection != null && !collection.isEmpty()) {
+        if (!collection.isEmpty()) {
             urlsToTry.add(serverUrl + "/" + collection);
         }
 
@@ -299,14 +299,15 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
     }
 
     private Credentials createCredentials(@NotNull ImportProjectContext context) {
+        String password = context.getPassword();
         switch (context.getAuthType()) {
-            case NTLM:
-                return new DefaultNTCredentials();
-            case BASIC:
+//            case NTLM:
+//                return new DefaultNTCredentials();
             case PAT:
+                return new UsernamePasswordCredentials.PatCredentials(password);
+            case BASIC:
             default:
                 String username = context.getUsername();
-                String password = context.getPassword();
                 String domain = context.getDomain();
 
                 if (domain != null && !domain.isEmpty()) {
@@ -328,11 +329,6 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
             if (password != null && !password.isEmpty()) {
                 return new UsernamePasswordCredentials("", password);
             }
-            return new DefaultNTCredentials();
-        }
-
-        // No credentials, use default NTLM
-        if (password == null || password.isEmpty()) {
             return new DefaultNTCredentials();
         }
 

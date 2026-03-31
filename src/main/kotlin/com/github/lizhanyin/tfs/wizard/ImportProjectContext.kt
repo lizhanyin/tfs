@@ -11,7 +11,7 @@ class ImportProjectContext {
     var username: String? = null
     var password: String? = null
     var domain: String? = null
-    var authType: AuthType = AuthType.NTLM
+    var authType: AuthType = AuthType.BASIC
 
     // 团队项目
     var teamProject: String? = null
@@ -47,7 +47,7 @@ class ImportProjectContext {
      * 认证类型枚举
      */
     enum class AuthType(val displayName: String) {
-        NTLM("Windows 集成认证 (NTLM)"),
+//        NTLM("Windows 集成认证 (NTLM)"),
         BASIC("基本认证"),
         PAT("个人访问令牌");
 

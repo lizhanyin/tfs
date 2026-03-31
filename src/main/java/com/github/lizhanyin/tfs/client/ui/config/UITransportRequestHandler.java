@@ -8,14 +8,15 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import com.intellij.openapi.diagnostic.Logger;
 
+import com.github.lizhanyin.tfs.client.credentials.IdeaCredentialsManagerFactory;
+import com.github.lizhanyin.tfs.client.framework.helper.UIHelpers;
+import com.github.lizhanyin.tfs.client.ui.helpers.Browser;
 import com.microsoft.tfs.core.config.ConnectionInstanceData;
 import com.microsoft.tfs.core.config.EnvironmentVariables;
 import com.microsoft.tfs.core.config.auth.DefaultTransportRequestHandler;
 import com.microsoft.tfs.core.config.httpclient.ConfigurableHTTPClientFactory;
-import com.microsoft.tfs.core.config.httpclient.DefaultHTTPClientFactory;
 import com.microsoft.tfs.core.config.persistence.DefaultPersistenceStoreProvider;
 import com.microsoft.tfs.core.credentials.CachedCredentials;
 import com.microsoft.tfs.core.credentials.CredentialsManager;
@@ -38,38 +39,29 @@ import com.microsoft.tfs.core.ws.runtime.exceptions.UnauthorizedException;
 import com.microsoft.tfs.util.StringUtil;
 
 /**
- * A {@link TransportAuthHandler} for the UI client, capable of handling
- * federated authentication exceptions by using service credentials or prompting
- * the user to reauthenticate to obtain new cookies. When new auth data is
- * computed, it updates the {@link ConnectionInstanceData} it is constructed
- * with in addition to configuring the {@link HttpClient}.
+ * A {@link DefaultTransportRequestHandler} for the UI client, capable of handling
+ * federated authentication exceptions by prompting the user to reauthenticate.
+ * Converted from Eclipse SWT to IntelliJ IDEA platform.
  *
  * @threadsafety unknown
  */
 public class UITransportRequestHandler extends DefaultTransportRequestHandler {
-    private static final Log log = LogFactory.getLog(UITransportRequestHandler.class);
+    private static final Logger log = Logger.getInstance(UITransportRequestHandler.class);
 
     /*
      * Only one authentication runnable (per mechanism) should run at a time.
      * Serialize them.
      */
-
     private final Object runnableLock = new Object();
     private UITransportAuthRunnable dialogRunnable = null;
 
     /**
-     * Creates a {@link UITransportAuthHandler} that updates the given profile
-     * with new auth data using the given {@link DefaultHTTPClientFactory}'s
+     * Creates a {@link UITransportRequestHandler} that updates the given profile
+     * with new auth data using the given {@link ConfigurableHTTPClientFactory}'s
      * credential update methods.
      *
-     * @param profile
-     *        the profile to update with new authentication data (must not be
-     *        <code>null</code>)
-     * @param clientFactory
-     *        the {@link DefaultHTTPClientFactory} to use to apply credentials
-     *        from the profile to the {@link HttpClient} (must not be
-     *        <code>null</code>)
-     * @param webServiceFactory
+     * @param connectionInstanceData the connection instance data to update
+     * @param clientFactory the factory to use to apply credentials
      */
     public UITransportRequestHandler(
         final ConnectionInstanceData connectionInstanceData,
@@ -85,8 +77,8 @@ public class UITransportRequestHandler extends DefaultTransportRequestHandler {
         final ConnectionInstanceData connectionInstanceData = getConnectionInstanceData();
         final Credentials credentials = connectionInstanceData.getCredentials();
 
-        log.debug(" Preparing request with the cedentials: " + credentials == null ? "null" //$NON-NLS-1$ //$NON-NLS-2$
-            : credentials.getClass().getName());
+        log.debug("Preparing request with credentials: " + (credentials == null ? "null" //$NON-NLS-1$ //$NON-NLS-2$
+            : credentials.getClass().getName()));
 
         if (credentials == null || !(credentials instanceof UsernamePasswordCredentials)) {
             return Status.CONTINUE;
@@ -99,19 +91,19 @@ public class UITransportRequestHandler extends DefaultTransportRequestHandler {
          * password, this cannot be correct, so prompt them.
          */
         if (StringUtil.isNullOrEmpty(oldCredentials.getPassword())) {
-            log.debug(" UsernamePasswordCredentials with an empty password detected"); //$NON-NLS-1$
+            log.debug("UsernamePasswordCredentials with an empty password detected"); //$NON-NLS-1$
             final Credentials newCredentials = getCredentials(
                 new UITransportUsernamePasswordAuthRunnable(
                     connectionInstanceData.getServerURI(),
                     connectionInstanceData.getCredentials()));
 
             if (newCredentials == null) {
-                log.debug(" New UsernamePasswordCredentials not provided. Cancelling the request"); //$NON-NLS-1$
+                log.debug("New UsernamePasswordCredentials not provided. Cancelling the request"); //$NON-NLS-1$
                 cancel.set(true);
                 return Status.CONTINUE;
             }
 
-            log.debug(" New UsernamePasswordCredentials provided"); //$NON-NLS-1$
+            log.debug("New UsernamePasswordCredentials provided"); //$NON-NLS-1$
 
             // Apply the credentials data to the existing client.
             connectionInstanceData.setCredentials(newCredentials);
@@ -134,7 +126,7 @@ public class UITransportRequestHandler extends DefaultTransportRequestHandler {
         final ArrayList<Cookie> fedAuthCookies = new ArrayList<Cookie>();
 
         if (cookieHeaders.length > 0) {
-            log.debug(" Request succeeded - Set-Cookie headers found in the response"); //$NON-NLS-1$
+            log.debug("Request succeeded - Set-Cookie headers found in the response"); //$NON-NLS-1$
         }
 
         final URI uri;
@@ -161,19 +153,9 @@ public class UITransportRequestHandler extends DefaultTransportRequestHandler {
         final CookieSpec cookieParser = CookiePolicy.getCookieSpec(CookiePolicy.RFC_2109);
 
         for (final Header cookieHeader : cookieHeaders) {
-            log.debug(" " + cookieHeader.getName() + ": " + cookieHeader.getValue()); //$NON-NLS-1$ //$NON-NLS-2$
-
-            /*
-             * Parse the cookie headers, store the serialized cookies in the
-             * profile.
-             */
+            log.debug(cookieHeader.getName() + ": " + cookieHeader.getValue()); //$NON-NLS-1$
 
             try {
-                /*
-                 * Current FedAuth* cookies do not include any parameters, in
-                 * particular the domain parameter. Let's use the original
-                 * hosted server URI as the cookie's domain.
-                 */
                 final Cookie[] cookies = cookieParser.parse(domain, port, "/", true, cookieHeader); //$NON-NLS-1$
 
                 for (final Cookie cookie : cookies) {
@@ -195,23 +177,22 @@ public class UITransportRequestHandler extends DefaultTransportRequestHandler {
 
             if (!(connectionInstanceData.getCredentials() instanceof CookieCredentials)
                 || !newCredentials.equals(connectionInstanceData.getCredentials())) {
-                log.debug(" New Cookie Credentials created"); //$NON-NLS-1$
+                log.debug("New Cookie Credentials created"); //$NON-NLS-1$
 
                 // Apply the credentials data to the existing client.
                 log.debug("Apply the new Cookie Credentials to the existing client."); //$NON-NLS-1$
                 connectionInstanceData.setCredentials(newCredentials);
 
-                log.debug(
-                    " Save the new Cookie Credentials to the existing Client Factory for future clients in this session."); //$NON-NLS-1$
+                log.debug("Save the new Cookie Credentials to the existing Client Factory for future clients."); //$NON-NLS-1$
                 getClientFactory().configureClientCredentials(
                     service.getClient(),
                     service.getClient().getState(),
                     connectionInstanceData);
 
                 final CredentialsManager credentialsManager =
-                    EclipseCredentialsManagerFactory.getCredentialsManager(DefaultPersistenceStoreProvider.INSTANCE);
+                    IdeaCredentialsManagerFactory.getCredentialsManager(DefaultPersistenceStoreProvider.INSTANCE);
                 try {
-                    log.debug(" Save the new Cookie Credentials in the Eclipse secure storage for future sessions."); //$NON-NLS-1$
+                    log.debug("Save the new Cookie Credentials in the IDEA secure storage for future sessions."); //$NON-NLS-1$
                     credentialsManager.setCredentials(new CachedCredentials(uri.toJavaNetUri(), newCredentials));
                 } catch (final URISyntaxException e) {
                     log.error("Incorrect URI", e); //$NON-NLS-1$
@@ -233,7 +214,7 @@ public class UITransportRequestHandler extends DefaultTransportRequestHandler {
         final AtomicBoolean cancel) {
         final ConnectionInstanceData connectionInstanceData = getConnectionInstanceData();
 
-        log.info("Authentication requested: ", exception); //$NON-NLS-1$
+        log.info("Authentication requested: " + exception.getMessage()); //$NON-NLS-1$
 
         /*
          * Super method handles FederatedAuthException with service credentials
@@ -253,7 +234,7 @@ public class UITransportRequestHandler extends DefaultTransportRequestHandler {
          * ACS or OAuth credentials dialog.
          */
         if (exception instanceof FederatedAuthException) {
-            log.debug(" FederatedAuthException has been raised."); //$NON-NLS-1$
+            log.debug("FederatedAuthException has been raised."); //$NON-NLS-1$
 
             cleanupSavedCredentials(service.getClient());
 
@@ -268,11 +249,10 @@ public class UITransportRequestHandler extends DefaultTransportRequestHandler {
         }
         /*
          * For failed username/password or PAT credentials, raise the UI dialog
-         * if the service recommends prompting. The SharePoint and Reports
-         * services seems to be the only ones that do not recommend.
+         * if the service recommends prompting.
          */
         else if (exception instanceof UnauthorizedException && service.isPromptForCredentials()) {
-            log.debug(" UnauthorizedException has been raised."); //$NON-NLS-1$
+            log.debug("UnauthorizedException has been raised."); //$NON-NLS-1$
 
             final Credentials usedCredentials = connectionInstanceData.getCredentials();
             final java.net.URI serverUrl = connectionInstanceData.getServerURI();
@@ -296,9 +276,9 @@ public class UITransportRequestHandler extends DefaultTransportRequestHandler {
                 && usedCredentials != null
                 && isHosted
                 && new CachedCredentials(serverUrl, usedCredentials).isPatCredentials()) {
-                // PAT token is probably expired. Remove it from the Eclipse
+                // PAT token is probably expired. Remove it from IDEA
                 // secure storage and retry.
-                final CredentialsManager credentialsManager = EclipseCredentialsManagerFactory.getCredentialsManager();
+                final CredentialsManager credentialsManager = IdeaCredentialsManagerFactory.getCredentialsManager();
                 credentialsManager.removeCredentials(serverUrl);
                 dialogRunnable = new UITransportOAuthRunnable(serverUrl);
             } else {
@@ -310,25 +290,24 @@ public class UITransportRequestHandler extends DefaultTransportRequestHandler {
         }
         /*
          * The Cookie Credentials used are incorrect. They are either corrupted
-         * in Eclipse secure storage or expired. Cleanup the storage and retry
-         * from scratch.
+         * in storage or expired. Cleanup the storage and retry from scratch.
          */
         else if (exception instanceof FederatedAuthFailedException) {
             cleanupSavedCredentials(service.getClient());
             return Status.CONTINUE;
         } else {
-            log.debug(" Unknown authentication type or shouldn't prompt for this service."); //$NON-NLS-1$
+            log.debug("Unknown authentication type or shouldn't prompt for this service."); //$NON-NLS-1$
             return Status.CONTINUE;
         }
 
-        log.debug(" Prompt for credentials"); //$NON-NLS-1$
+        log.debug("Prompt for credentials"); //$NON-NLS-1$
         final Credentials credentials = getCredentials(dialogRunnable);
 
         log.debug(
-            " The dialog returned credentials: " + (credentials == null ? "null" : credentials.getClass().getName())); //$NON-NLS-1$ //$NON-NLS-2$
+            "The dialog returned credentials: " + (credentials == null ? "null" : credentials.getClass().getName())); //$NON-NLS-1$ //$NON-NLS-2$
 
         if (credentials == null) {
-            log.info(" Credentials dialog has been cancelled by the user."); //$NON-NLS-1$
+            log.info("Credentials dialog has been cancelled by the user."); //$NON-NLS-1$
             cancel.set(true);
             return Status.CONTINUE;
         }
@@ -337,7 +316,7 @@ public class UITransportRequestHandler extends DefaultTransportRequestHandler {
         log.debug("Apply the new credentials to the existing client."); //$NON-NLS-1$
         connectionInstanceData.setCredentials(credentials);
 
-        log.debug(" Save the new credentials to the existing Client Factory for future clients in this session."); //$NON-NLS-1$
+        log.debug("Save the new credentials to the existing Client Factory for future clients in this session."); //$NON-NLS-1$
         getClientFactory().configureClientCredentials(
             service.getClient(),
             service.getClient().getState(),
@@ -347,7 +326,7 @@ public class UITransportRequestHandler extends DefaultTransportRequestHandler {
     }
 
     private void cleanupSavedCredentials(final HttpClient client) {
-        log.debug(" If any credentials were used they failed. Clean up saved credentials for the host"); //$NON-NLS-1$
+        log.debug("If any credentials were used they failed. Clean up saved credentials for the host"); //$NON-NLS-1$
 
         final ConnectionInstanceData connectionInstanceData = getConnectionInstanceData();
 
@@ -355,7 +334,7 @@ public class UITransportRequestHandler extends DefaultTransportRequestHandler {
         client.getState().clearCredentials();
 
         final CredentialsManager credentialsManager =
-            EclipseCredentialsManagerFactory.getCredentialsManager(DefaultPersistenceStoreProvider.INSTANCE);
+            IdeaCredentialsManagerFactory.getCredentialsManager(DefaultPersistenceStoreProvider.INSTANCE);
         credentialsManager.removeCredentials(connectionInstanceData.getServerURI());
 
         connectionInstanceData.setCredentials(new DefaultNTCredentials());
@@ -369,8 +348,7 @@ public class UITransportRequestHandler extends DefaultTransportRequestHandler {
      * If there is no {@link Runnable} executing to get the users credentials,
      * then the current runnable is executed.
      *
-     * @param dialogRunnable
-     *        the runnable to execute to obtain credentials
+     * @param dialogRunnable the runnable to execute to obtain credentials
      * @return the credentials, or <code>null</code> if the user cancelled
      */
     private Credentials getCredentials(final UITransportAuthRunnable dialogRunnable) {
@@ -383,10 +361,6 @@ public class UITransportRequestHandler extends DefaultTransportRequestHandler {
              * If there is not, we'll set up the runnable we were given.
              */
             synchronized (runnableLock) {
-                /*
-                 * There is no runnable currently executing. We can execute the
-                 * one provided.
-                 */
                 if (this.dialogRunnable == null) {
                     this.dialogRunnable = dialogRunnable;
                     ownsRunnable = true;
@@ -397,6 +371,10 @@ public class UITransportRequestHandler extends DefaultTransportRequestHandler {
 
             /*
              * If we need to start our runnable, do so on the UI thread.
+             * In IDEA, UIHelpers.runOnUIThread(false, ...) uses invokeAndWait,
+             * which blocks the calling thread until the EDT finishes.
+             * The runnable shows a modal dialog which blocks the EDT until
+             * closed, so the call is fully synchronous.
              */
             if (ownsRunnable) {
                 UIHelpers.runOnUIThread(false, runnable);
@@ -407,21 +385,13 @@ public class UITransportRequestHandler extends DefaultTransportRequestHandler {
                  */
                 while (!runnable.isComplete()) {
                     /*
-                     * If we're the UI thread, service it (or we'll deadlock
-                     * waiting for our runnable to complete.)
+                     * If we're the EDT, we should not be here (invokeAndWait
+                     * would have thrown). Simply sleep and wait.
                      */
-                    if (UIHelpers.getDisplay().getThread() == Thread.currentThread()) {
-                        if (!UIHelpers.getDisplay().readAndDispatch()) {
-                            UIHelpers.getDisplay().sleep();
-                        }
-                    }
-                    /* Otherwise, simply sleep and wait for this to finish. */
-                    else {
-                        try {
-                            Thread.sleep(100);
-                        } catch (final InterruptedException e) {
-                            log.warn("Interrupted waiting for credentials dialog", e); //$NON-NLS-1$
-                        }
+                    try {
+                        Thread.sleep(100);
+                    } catch (final InterruptedException e) {
+                        log.warn("Interrupted waiting for credentials dialog"); //$NON-NLS-1$
                     }
                 }
             }

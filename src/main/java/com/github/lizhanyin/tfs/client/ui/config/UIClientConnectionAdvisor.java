@@ -6,9 +6,7 @@ package com.github.lizhanyin.tfs.client.ui.config;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
+import com.intellij.openapi.diagnostic.Logger;
 
 import com.microsoft.tfs.core.config.ConnectionInstanceData;
 import com.microsoft.tfs.core.config.httpclient.ConfigurableHTTPClientFactory;
@@ -18,6 +16,8 @@ import com.microsoft.tfs.core.config.webservice.DefaultWebServiceFactory;
 import com.microsoft.tfs.core.config.webservice.WebServiceFactory;
 
 public class UIClientConnectionAdvisor extends CommonClientConnectionAdvisor {
+    private static final Logger log = Logger.getInstance(UIClientConnectionAdvisor.class);
+
     /**
      * Creates a {@link UIClientConnectionAdvisor} that uses the current default
      * {@link Locale} and {@link TimeZone} for all
@@ -27,20 +27,16 @@ public class UIClientConnectionAdvisor extends CommonClientConnectionAdvisor {
         super(Locale.getDefault(), TimeZone.getDefault());
     }
 
-    private static final Log log = LogFactory.getLog(UIClientConnectionAdvisor.class);
-
     @Override
     public HTTPClientFactory getHTTPClientFactory(final ConnectionInstanceData instanceData) {
-        if (log.isDebugEnabled()) {
-            log.debug("IProxyService is not available, returning a LegacyHttpClientFactory"); //$NON-NLS-1$
-        }
+        log.debug("Returning IdeaHTTPClientFactory"); //$NON-NLS-1$
 
-        return new LegacyHTTPClientFactory(instanceData);
+        return new IdeaHTTPClientFactory(instanceData);
     }
 
     @Override
     public TFProxyServerSettingsFactory getTFProxyServerSettingsFactory(final ConnectionInstanceData instanceData) {
-        return new EclipseTFProxyServerSettingsFactory(instanceData);
+        return new IdeaTFProxyServerSettingsFactory(instanceData);
     }
 
     @Override

@@ -10,7 +10,6 @@ import com.intellij.util.ui.FormBuilder
 import com.intellij.util.ui.JBUI
 import java.awt.BorderLayout
 import java.awt.Dimension
-import java.awt.Window
 import java.awt.event.ItemEvent
 import javax.swing.JButton
 import javax.swing.JComponent
@@ -111,8 +110,8 @@ class ServerSelectionStep(context: ImportProjectContext) :
             if (selected.authType.isNotEmpty()) {
                 try {
                     context.authType = ImportProjectContext.AuthType.valueOf(selected.authType)
-                } catch (e: IllegalArgumentException) {
-                    context.authType = ImportProjectContext.AuthType.NTLM
+                } catch (_: IllegalArgumentException) {
+                    context.authType = ImportProjectContext.AuthType.BASIC
                 }
             }
 
@@ -175,7 +174,7 @@ class ServerSelectionStep(context: ImportProjectContext) :
             if (selected.authType.isNotEmpty()) {
                 try {
                     context.authType = ImportProjectContext.AuthType.valueOf(selected.authType)
-                } catch (e: IllegalArgumentException) {
+                } catch (_: IllegalArgumentException) {
                     // 使用默认值
                 }
             }

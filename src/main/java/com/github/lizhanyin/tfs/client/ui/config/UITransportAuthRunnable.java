@@ -3,13 +3,17 @@
 
 package com.github.lizhanyin.tfs.client.ui.config;
 
-import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.swt.widgets.Display;
-
-import com.microsoft.tfs.client.common.ui.dialogs.connect.CredentialsCompleteDialog;
-import com.microsoft.tfs.client.common.ui.dialogs.connect.CredentialsCompleteListener;
+import com.intellij.openapi.ui.DialogWrapper;
 import com.microsoft.tfs.core.httpclient.Credentials;
 
+/**
+ * Abstract base class for authentication runnables that display credential
+ * dialogs on the EDT. Converted from Eclipse SWT to IntelliJ IDEA Swing platform.
+ *
+ * <p>In the Eclipse version, this class managed an SWT event loop while waiting
+ * for the user to complete a non-blocking dialog. In the IDEA version, the dialog
+ * is modal and blocks the EDT until closed, simplifying the threading model.</p>
+ */
 public abstract class UITransportAuthRunnable implements Runnable {
     private final Object lock = new Object();
 
@@ -42,36 +46,23 @@ public abstract class UITransportAuthRunnable implements Runnable {
             return;
         }
 
-        credentialsDialog.setBlockOnOpen(false);
-        credentialsDialog.addCredentialsCompleteListener(new CredentialsCompleteListener() {
-            @Override
-            public void credentialsComplete() {
-                final Credentials credentials = (credentialsDialog.getReturnCode() == IDialogConstants.OK_ID)
-                    ? credentialsDialog.getCredentials() : null;
-
-                setComplete(credentials);
-            }
-        });
-
-        if (credentialsDialog.open() == IDialogConstants.CANCEL_ID) {
-            setComplete(null);
-        };
-
         /*
-         * Store a copy of the display, because the shell may be closed /
-         * disposed (below) while processing the UI event loop. (The display
-         * itself will never be disposed unless the program has exited.)
+         * Show the dialog on the EDT. Since this runs on the EDT (via
+         * UIHelpers.runOnUIThread), the modal dialog blocks until closed.
+         * No separate event loop is needed (unlike SWT).
          */
-        final Display display = credentialsDialog.getShell().getDisplay();
+        final int exitCode = credentialsDialog.show();
 
-        /* Process the UI thread until the user closes the auth dialog. */
-        while (!isComplete()) {
-            if (!display.readAndDispatch()) {
-                display.sleep();
-            }
-        }
+        final Credentials creds = (exitCode == DialogWrapper.OK_EXIT_CODE)
+            ? credentialsDialog.getCredentials() : null;
+
+        setComplete(creds);
     }
 
+    /**
+     * Subclasses must return a {@link CredentialsCompleteDialog} to display,
+     * or <code>null</code> if they cannot handle the authentication request.
+     */
     protected abstract CredentialsCompleteDialog getCredentialsDialog();
 
     private void setComplete(final Credentials credentials) {

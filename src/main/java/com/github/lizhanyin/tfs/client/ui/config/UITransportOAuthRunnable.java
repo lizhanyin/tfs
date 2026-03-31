@@ -17,67 +17,57 @@ import com.microsoft.tfs.core.credentials.CachedCredentials;
 import com.microsoft.tfs.core.credentials.CredentialsManager;
 import com.microsoft.tfs.core.httpclient.Credentials;
 import com.microsoft.tfs.core.httpclient.UsernamePasswordCredentials;
-import com.microsoft.tfs.core.ws.runtime.exceptions.UnauthorizedException;
 import com.microsoft.tfs.util.Check;
 
 /**
- * A {@link UITransportAuthRunnable} that displays a username/password credential
- * dialog for the user to authenticate. Converted from Eclipse to IntelliJ IDEA.
+ * A {@link UITransportAuthRunnable} that handles OAuth2 authentication.
+ *
+ * <p>For TFS 2015 on-premises, OAuth device flow is typically not available
+ * (it was introduced in TFS 2017/Azure DevOps). This implementation shows
+ * a username/password dialog as a fallback, with a note suggesting PAT usage.</p>
+ *
+ * <p>The Eclipse version used {@code CredentialsHelper.getOAuthCredentials()} and
+ * an embedded browser for device flow. In IDEA, this can be extended in the future
+ * to use JBCefBrowser for proper OAuth support.</p>
  */
-public class UITransportUsernamePasswordAuthRunnable extends UITransportAuthRunnable {
-    private static final Logger log = Logger.getInstance(UITransportUsernamePasswordAuthRunnable.class);
+public class UITransportOAuthRunnable extends UITransportAuthRunnable {
+    private static final Logger log = Logger.getInstance(UITransportOAuthRunnable.class);
 
     private final URI serverURI;
-    private final Credentials credentials;
-    private final UnauthorizedException exception;
 
-    public UITransportUsernamePasswordAuthRunnable(final URI serverURI, final Credentials credentials) {
-        this(serverURI, credentials, null);
-    }
-
-    public UITransportUsernamePasswordAuthRunnable(
-        final URI serverURI,
-        final Credentials credentials,
-        final UnauthorizedException exception) {
+    public UITransportOAuthRunnable(final URI serverURI) {
         Check.notNull(serverURI, "serverURI"); //$NON-NLS-1$
-        Check.notNull(credentials, "credentials"); //$NON-NLS-1$
 
         this.serverURI = serverURI;
-        this.credentials = credentials;
-        this.exception = exception;
     }
 
     @Override
     protected CredentialsCompleteDialog getCredentialsDialog() {
+        log.debug("OAuth device flow not available, showing credential dialog as fallback"); //$NON-NLS-1$
+
         final Window parent = ShellUtils.getBestParent(ShellUtils.getActiveProjectWindow());
 
         final CredentialsManager credentialsManager =
             IdeaCredentialsManagerFactory.getCredentialsManager(DefaultPersistenceStoreProvider.INSTANCE);
 
-        return new UsernamePasswordCredentialsDialog(parent, serverURI, credentials, exception, credentialsManager);
+        return new OAuthFallbackCredentialsDialog(parent, serverURI, credentialsManager);
     }
 
     /**
-     * Concrete {@link CredentialsCompleteDialog} that wraps the IDEA
-     * {@link CredentialsDialog} and converts results to TFS SDK credentials.
+     * Fallback credential dialog for OAuth scenarios.
+     * Shows a standard username/password dialog with a hint about PAT.
      */
-    private static class UsernamePasswordCredentialsDialog extends CredentialsCompleteDialog {
+    private class OAuthFallbackCredentialsDialog extends CredentialsCompleteDialog {
         private final Window parent;
         private final URI serverURI;
-        private final Credentials initialCredentials;
-        private final UnauthorizedException exception;
         private final CredentialsManager credentialsManager;
 
-        UsernamePasswordCredentialsDialog(
+        OAuthFallbackCredentialsDialog(
             final Window parent,
             final URI serverURI,
-            final Credentials initialCredentials,
-            final UnauthorizedException exception,
             final CredentialsManager credentialsManager) {
             this.parent = parent;
             this.serverURI = serverURI;
-            this.initialCredentials = initialCredentials;
-            this.exception = exception;
             this.credentialsManager = credentialsManager;
         }
 
@@ -85,21 +75,14 @@ public class UITransportUsernamePasswordAuthRunnable extends UITransportAuthRunn
         public int show() {
             final CredentialsDialog dialog = new CredentialsDialog(parent, serverURI.toString());
 
-            // Set initial credentials from the connection
-            dialog.setCredentials(initialCredentials);
+            // Default to PAT type for OAuth scenarios
+            dialog.setCredentials(CredentialsDialog.CredentialType.PERSONAL_ACCESS_TOKEN, null, null);
 
-            // Set error message if available
-            if (exception != null) {
-                dialog.setErrorMessage(exception.getLocalizedMessage());
-            }
-
-            // Show the dialog (modal, blocks until closed)
             dialog.show();
 
             final int exitCode = dialog.getExitCode();
 
             if (exitCode == DialogWrapper.OK_EXIT_CODE) {
-                // Convert IDEA dialog results to TFS SDK credentials
                 final String username = dialog.getUsername();
                 final String password = dialog.getPassword();
 
@@ -113,11 +96,12 @@ public class UITransportUsernamePasswordAuthRunnable extends UITransportAuthRunn
                 setCredentials(tfsCredentials);
                 setExitCode(DialogWrapper.OK_EXIT_CODE);
 
+                // Save credentials
                 if (credentialsManager.canWrite()) {
                     try {
                         credentialsManager.setCredentials(
                             new CachedCredentials(serverURI, tfsCredentials));
-                        log.debug("Credentials saved to IDEA secure storage"); //$NON-NLS-1$
+                        log.debug("OAuth fallback credentials saved"); //$NON-NLS-1$
                     } catch (final Exception e) {
                         log.warn("Failed to save credentials", e); //$NON-NLS-1$
                     }

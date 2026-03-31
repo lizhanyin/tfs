@@ -33,6 +33,7 @@ class CredentialsDialog(
     private lateinit var patRadio: JRadioButton
     private lateinit var usernameField: JBTextField
     private lateinit var passwordField: JBPasswordField
+    private lateinit var savePasswordCheckbox: JCheckBox
 
     private var credentialType: CredentialType = CredentialType.USER_PASSWORD
     private var username: String? = null
@@ -76,6 +77,11 @@ class CredentialsDialog(
         // 密码
         passwordField = JBPasswordField()
         builder.addLabeledComponent("密码:", passwordField)
+
+        // 保存密码
+        savePasswordCheckbox = JCheckBox("保存密码", allowSavePassword)
+        savePasswordCheckbox.isVisible = allowSavePassword
+        builder.addComponent(savePasswordCheckbox)
 
         val panel = builder.panel
         panel.border = JBUI.Borders.empty(10)
@@ -189,6 +195,19 @@ class CredentialsDialog(
      * 设置是否允许保存密码
      */
     var allowSavePassword: Boolean = true
+        set(value) {
+            field = value
+            if (::savePasswordCheckbox.isInitialized) {
+                savePasswordCheckbox.isVisible = value
+            }
+        }
+
+    /**
+     * 获取是否勾选了保存密码
+     */
+    fun isSavePasswordChecked(): Boolean {
+        return if (::savePasswordCheckbox.isInitialized) savePasswordCheckbox.isSelected else false
+    }
 
     /**
      * 设置错误消息

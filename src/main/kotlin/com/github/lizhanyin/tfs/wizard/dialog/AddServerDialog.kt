@@ -329,7 +329,7 @@ class AddServerDialog(
                             authType = ImportProjectContext.AuthType.PAT
                             password = savedPassword
                         } else {
-                            authType = ImportProjectContext.AuthType.NTLM
+                            authType = ImportProjectContext.AuthType.BASIC
                             username = savedUsername
                             password = savedPassword
                         }

@@ -90,6 +90,7 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
 
         // 完成按钮
         val finishButton = createJButtonForAction(okAction)
+        finishButton.isEnabled = false
         buttonPanel.add(finishButton)
 
         // 放弃按钮

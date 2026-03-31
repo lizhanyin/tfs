@@ -5,23 +5,30 @@ package com.github.lizhanyin.tfs.client.ui.tasks;
 
 import com.github.lizhanyin.tfs.client.ui.Task;
 import com.intellij.openapi.project.Project;
+import org.jetbrains.annotations.Nullable;
 
+import com.github.lizhanyin.tfs.client.framework.command.CommandExecutor;
 import com.github.lizhanyin.tfs.client.framework.command.ICommandExecutor;
 import com.github.lizhanyin.tfs.client.ui.framework.command.UICommandExecutorFactory;
-import com.microsoft.tfs.util.Check;
 
 public abstract class BaseTask implements Task {
     private final Project project;
 
     private ICommandExecutor commandExecutor;
 
-    public BaseTask(final Project project) {
-        Check.notNull(project, "project"); //$NON-NLS-1$
-
+    public BaseTask(@Nullable final Project project) {
         this.project = project;
-        commandExecutor = UICommandExecutorFactory.newUIJobCommandExecutor(project);
+
+        if (project != null) {
+            commandExecutor = UICommandExecutorFactory.newUIJobCommandExecutor(project);
+        } else {
+            // Fallback to synchronous executor when no project is available
+            // (e.g. during server configuration in the import wizard)
+            commandExecutor = new CommandExecutor();
+        }
     }
 
+    @Nullable
     protected Project getProject() {
         return project;
     }
