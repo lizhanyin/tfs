@@ -1,5 +1,6 @@
 package com.github.lizhanyin.tfs.wizard.dialog
 
+import com.github.lizhanyin.tfs.TfsBundle
 import com.github.lizhanyin.tfs.settings.TfsServerConfiguration
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBScrollPane
@@ -30,9 +31,9 @@ class ManageServersDialog(parent: Component) : DialogWrapper(parent, false) {
     private var selectedServer: TfsServerConfiguration.ServerConfig? = null
 
     init {
-        title = "添加/移除 Team Foundation Server"
-        setOKButtonText("关闭")
-        setCancelButtonText("关闭")
+        title = TfsBundle.message("dialog.manageServers.title")
+        setOKButtonText(TfsBundle.message("wizard.button.close"))
+        setCancelButtonText(TfsBundle.message("wizard.button.close"))
         init()
     }
 
@@ -42,7 +43,7 @@ class ManageServersDialog(parent: Component) : DialogWrapper(parent, false) {
         panel.preferredSize = Dimension(600, 300)
 
         // 上方：标签独占一行
-        val label = JLabel("Team Foundation Server 列表")
+        val label = JLabel(TfsBundle.message("dialog.manageServers.listLabel"))
         panel.add(label, BorderLayout.NORTH)
 
         // 中间：左侧表格 + 右侧按钮
@@ -85,14 +86,14 @@ class ManageServersDialog(parent: Component) : DialogWrapper(parent, false) {
             border = JBUI.Borders.emptyLeft(10)
         }
 
-        val addButton = JButton("添加...").apply {
+        val addButton = JButton(TfsBundle.message("dialog.manageServers.button.add")).apply {
             alignmentX = Component.LEFT_ALIGNMENT
             addActionListener { addServer() }
         }
         buttonPanel.add(addButton)
         buttonPanel.add(Box.createVerticalStrut(5))
 
-        credentialsButton = JButton("输入凭证").apply {
+        credentialsButton = JButton(TfsBundle.message("dialog.manageServers.button.credentials")).apply {
             alignmentX = Component.LEFT_ALIGNMENT
             addActionListener { inputCredentials() }
             isEnabled = false
@@ -100,7 +101,7 @@ class ManageServersDialog(parent: Component) : DialogWrapper(parent, false) {
         buttonPanel.add(credentialsButton)
         buttonPanel.add(Box.createVerticalStrut(5))
 
-        clearCredentialsButton = JButton("清除凭证").apply {
+        clearCredentialsButton = JButton(TfsBundle.message("dialog.manageServers.button.clearCredentials")).apply {
             alignmentX = Component.LEFT_ALIGNMENT
             addActionListener { clearCredentials() }
             isEnabled = false
@@ -108,7 +109,7 @@ class ManageServersDialog(parent: Component) : DialogWrapper(parent, false) {
         buttonPanel.add(clearCredentialsButton)
         buttonPanel.add(Box.createVerticalStrut(5))
 
-        removeButton = JButton("移除").apply {
+        removeButton = JButton(TfsBundle.message("dialog.manageServers.button.remove")).apply {
             alignmentX = Component.LEFT_ALIGNMENT
             addActionListener { removeServer() }
             isEnabled = false
@@ -125,7 +126,7 @@ class ManageServersDialog(parent: Component) : DialogWrapper(parent, false) {
         val panel = JPanel(FlowLayout(FlowLayout.RIGHT))
         panel.border = JBUI.Borders.emptyTop(10)
 
-        val closeButton = JButton("关闭")
+        val closeButton = JButton(TfsBundle.message("wizard.button.close"))
         closeButton.addActionListener { doCancelAction() }
         panel.add(closeButton)
 
@@ -238,8 +239,8 @@ class ManageServersDialog(parent: Component) : DialogWrapper(parent, false) {
 
         val result = JOptionPane.showConfirmDialog(
             contentPane,
-            "是否要清除 Team Foundation Server ${server.name} 的已保存凭据？",
-            "清除保存的凭据",
+            TfsBundle.message("dialog.manageServers.confirm.clearCredentials", server.name),
+            TfsBundle.message("dialog.manageServers.confirm.clearCredentials.title"),
             JOptionPane.YES_NO_OPTION,
             JOptionPane.QUESTION_MESSAGE
         )
@@ -266,8 +267,8 @@ class ManageServersDialog(parent: Component) : DialogWrapper(parent, false) {
 
         val result = JOptionPane.showConfirmDialog(
             contentPane,
-            "是否要移除 Team Foundation Server ${server.name}？",
-            "移除 Team Foundation Server",
+            TfsBundle.message("dialog.manageServers.confirm.remove", server.name),
+            TfsBundle.message("dialog.manageServers.confirm.remove.title"),
             JOptionPane.YES_NO_OPTION,
             JOptionPane.WARNING_MESSAGE
         )
@@ -289,7 +290,11 @@ class ManageServersDialog(parent: Component) : DialogWrapper(parent, false) {
      * 服务器表格模型
      */
     private class ServerTableModel : AbstractTableModel() {
-        private val columnNames = arrayOf("名称", "服务器", "凭证")
+        private val columnNames = arrayOf(
+            TfsBundle.message("dialog.manageServers.column.name"),
+            TfsBundle.message("dialog.manageServers.column.server"),
+            TfsBundle.message("dialog.manageServers.column.credentials")
+        )
         private var servers: List<TfsServerConfiguration.ServerConfig> = emptyList()
 
         fun setServers(servers: List<TfsServerConfiguration.ServerConfig>) {
@@ -311,7 +316,7 @@ class ManageServersDialog(parent: Component) : DialogWrapper(parent, false) {
             return when (columnIndex) {
                 0 -> server.name.ifEmpty { server.url }
                 1 -> server.url
-                2 -> if (!server.password.isNullOrEmpty()) "已保存" else "-"
+                2 -> if (!server.password.isNullOrEmpty()) TfsBundle.message("dialog.manageServers.status.saved") else "-"
                 else -> null
             }
         }

@@ -1,5 +1,7 @@
 package com.github.lizhanyin.tfs.wizard
 
+import com.github.lizhanyin.tfs.TfsBundle
+
 /**
  * 导入项目向导上下文
  * 用于在向导步骤之间共享数据
@@ -46,10 +48,12 @@ class ImportProjectContext {
     /**
      * 认证类型枚举
      */
-    enum class AuthType(val displayName: String) {
+    enum class AuthType(private val key: String) {
 //        NTLM("Windows 集成认证 (NTLM)"),
-        BASIC("基本认证"),
-        PAT("个人访问令牌");
+        BASIC("wizard.auth.basic"),
+        PAT("wizard.auth.pat");
+
+        val displayName: String get() = TfsBundle.message(key)
 
         override fun toString(): String = displayName
     }

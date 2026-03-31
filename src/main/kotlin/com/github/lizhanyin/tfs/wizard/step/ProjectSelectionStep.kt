@@ -1,5 +1,6 @@
 package com.github.lizhanyin.tfs.wizard.step
 
+import com.github.lizhanyin.tfs.TfsBundle
 import com.github.lizhanyin.tfs.services.TfsConnectionService
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext
 import com.intellij.openapi.application.ApplicationManager
@@ -30,7 +31,7 @@ import javax.swing.tree.TreeNode
  * 项目选择步骤
  */
 class ProjectSelectionStep(context: ImportProjectContext) :
-    AbstractWizardStep(STEP_ID, "选择项目", context) {
+    AbstractWizardStep(STEP_ID, TfsBundle.message("wizard.step.projectSelection.title"), context) {
 
     companion object {
         private const val STEP_ID = "project-selection"
@@ -54,15 +55,15 @@ class ProjectSelectionStep(context: ImportProjectContext) :
             null,
             FileChooserDescriptorFactory.createSingleFolderDescriptor()
         )
-        builder.addLabeledComponent("本地路径:", localPathField)
+        builder.addLabeledComponent(TfsBundle.message("wizard.label.localPath"), localPathField)
 
         builder.addSeparator()
 
         // 项目树标签
         val headerPanel = JPanel(BorderLayout())
-        headerPanel.add(JBLabel("选择要导入的项目/文件夹:"), BorderLayout.WEST)
+        headerPanel.add(JBLabel(TfsBundle.message("wizard.label.selectProjects")), BorderLayout.WEST)
 
-        refreshButton = JButton("刷新")
+        refreshButton = JButton(TfsBundle.message("wizard.button.refresh"))
         refreshButton.addActionListener { loadProjects() }
         headerPanel.add(refreshButton, BorderLayout.EAST)
 
@@ -77,7 +78,7 @@ class ProjectSelectionStep(context: ImportProjectContext) :
         builder.addSeparator()
 
         // 状态标签
-        statusLabel = JBLabel("正在加载项目列表...")
+        statusLabel = JBLabel(TfsBundle.message("wizard.status.loadingProjects"))
         builder.addComponent(statusLabel)
 
         val panel = builder.panel
@@ -124,18 +125,18 @@ class ProjectSelectionStep(context: ImportProjectContext) :
      */
     private fun loadProjects() {
         if (!context.isTeamProjectSelected()) {
-            statusLabel.text = "请先选择团队项目"
+            statusLabel.text = TfsBundle.message("wizard.error.selectTeamProjectFirst")
             statusLabel.foreground = JBColor.RED
             return
         }
 
-        statusLabel.text = "正在加载项目列表..."
+        statusLabel.text = TfsBundle.message("wizard.status.loadingProjects")
         statusLabel.foreground = Color.BLACK
         refreshButton.isEnabled = false
 
-        ProgressManager.getInstance().run(object : Task.Backgroundable(null, "加载项目", false) {
+        ProgressManager.getInstance().run(object : Task.Backgroundable(null, TfsBundle.message("wizard.progress.loadingProjects"), false) {
             override fun run(indicator: ProgressIndicator) {
-                indicator.text = "正在从 TFS 服务器获取项目列表..."
+                indicator.text = TfsBundle.message("wizard.progress.fetchingProjects")
                 indicator.isIndeterminate = true
 
                 try {
@@ -163,10 +164,10 @@ class ProjectSelectionStep(context: ImportProjectContext) :
 
                         val itemCount = countLeafNodes(rootTreeNode)
                         if (itemCount == 0) {
-                            statusLabel.text = "未找到可导入的项目"
+                            statusLabel.text = TfsBundle.message("wizard.status.noProjects")
                             statusLabel.foreground = JBColor.ORANGE
                         } else {
-                            statusLabel.text = "已加载 $itemCount 个项目/文件夹"
+                            statusLabel.text = TfsBundle.message("wizard.status.projectsLoaded", itemCount)
                             statusLabel.foreground = Color(0, 128, 0)
                         }
                         refreshButton.isEnabled = true
@@ -174,7 +175,7 @@ class ProjectSelectionStep(context: ImportProjectContext) :
 
                 } catch (e: Exception) {
                     SwingUtilities.invokeLater {
-                        statusLabel.text = "加载失败: ${e.message}"
+                        statusLabel.text = TfsBundle.message("wizard.error.loadingFailed", e.message ?: "")
                         statusLabel.foreground = JBColor.RED
                         refreshButton.isEnabled = true
                     }
