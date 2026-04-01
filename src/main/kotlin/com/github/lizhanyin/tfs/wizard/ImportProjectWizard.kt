@@ -5,17 +5,14 @@ import com.github.lizhanyin.tfs.client.ui.framework.UIContext
 import com.github.lizhanyin.tfs.wizard.step.ProjectSelectionStep
 import com.github.lizhanyin.tfs.wizard.step.ServerSelectionStep
 import com.github.lizhanyin.tfs.wizard.step.CollectionSelectionStep
-import com.intellij.openapi.progress.ProgressIndicator
-import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBUI
-import org.jetbrains.annotations.NotNull
 import org.jetbrains.annotations.Nullable
 import java.awt.BorderLayout
+import java.awt.Dimension
 import java.awt.FlowLayout
 import java.awt.Font
 import javax.swing.*
@@ -47,6 +44,17 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
     private lateinit var previousButton: JButton
     private lateinit var nextButton: JButton
 
+    // 进度条组件
+    private lateinit var progressPanel: JPanel
+    private lateinit var progressBar: JProgressBar
+    private lateinit var progressLabel: JBLabel
+    private lateinit var cancelImportButton: JButton
+
+    // 导入状态
+    @Volatile
+    private var importCancelled = false
+    private var importThread: Thread? = null
+
     init {
         setTitle(TfsBundle.message(TITLE))
         setOKButtonText(TfsBundle.message("ImportProjectWizard.button.import"))
@@ -77,6 +85,25 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
 
     override fun createSouthPanel(): JComponent {
         val southPanel = JPanel(BorderLayout())
+        southPanel.border = JBUI.Borders.emptyTop(10)
+
+        // 进度区域（默认隐藏）
+        progressPanel = JPanel(BorderLayout(5, 0)).apply {
+            add(JBLabel(TfsBundle.message("ImportProjectWizard.progress.importingFromTfs")).also {
+                progressLabel = it
+            }, BorderLayout.WEST)
+            add(JProgressBar().apply {
+                isIndeterminate = true
+                preferredSize = Dimension(200, preferredSize.height)
+                progressBar = this
+            }, BorderLayout.CENTER)
+            add(JButton(TfsBundle.message("ImportProjectWizard.progress.cancel")).apply {
+                cancelImportButton = this
+                addActionListener { cancelImport() }
+            }, BorderLayout.EAST)
+            isVisible = false
+        }
+        southPanel.add(progressPanel, BorderLayout.WEST)
 
         // 导航按钮面板
         val buttonPanel = JPanel(FlowLayout(FlowLayout.RIGHT, 5, 0))
@@ -103,7 +130,6 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
         buttonPanel.add(cancelButton)
 
         southPanel.add(buttonPanel, BorderLayout.EAST)
-        southPanel.border = JBUI.Borders.emptyTop(10)
         return southPanel
     }
 
@@ -209,52 +235,79 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
      * 执行项目导入
      */
     private fun executeImport() {
-        ProgressManager.getInstance().run(object : Task.Modal(project, TfsBundle.message("ImportProjectWizard.progress.importing"), true) {
-            override fun run(@NotNull indicator: ProgressIndicator) {
-                indicator.text = TfsBundle.message("ImportProjectWizard.progress.importingFromTfs")
-                indicator.isIndeterminate = false
-                indicator.fraction = 0.0
+        importCancelled = false
+        setImporting(true)
 
-                try {
-                    // TODO: 实现实际的导入逻辑
-                    // 1. 创建工作区
-                    // 2. 映射文件夹
-                    // 3. 获取文件
-                    // 4. 创建 IDEA 项目
+        importThread = Thread({
+            try {
+                // TODO: 实现实际的导入逻辑
+                // 1. 创建工作区
+                // 2. 映射文件夹
+                // 3. 获取文件
+                // 4. 创建 IDEA 项目
 
-                    for (i in 0..100) {
-                        indicator.checkCanceled()
-                        indicator.fraction = i / 100.0
-                        Thread.sleep(20)
-                    }
+                for (i in 0..100) {
+                    if (importCancelled) break
+                    Thread.sleep(20)
+                }
 
+                if (importCancelled) {
                     SwingUtilities.invokeLater {
-                        // 先关闭对话框
-                        close(OK_EXIT_CODE)
-                        // 再显示成功消息
-                        Messages.showInfoMessage(
-                            TfsBundle.message("ImportProjectWizard.success.message", context.serverUrl ?: "", context.teamProject ?: "", context.localPath ?: ""),
-                            TfsBundle.message("ImportProjectWizard.success.title")
-                        )
+                        setImporting(false)
                     }
+                    return@Thread
+                }
 
-                } catch (e: Exception) {
-                    if (e is com.intellij.openapi.progress.ProcessCanceledException) {
-                        throw e
-                    }
-                    SwingUtilities.invokeLater {
-                        Messages.showErrorDialog(
-                            contentPanel,
-                            TfsBundle.message("ImportProjectWizard.error.importFailed", e.message ?: ""),
-                            TfsBundle.message("ImportProjectWizard.error.importFailed.title")
-                        )
-                    }
+                SwingUtilities.invokeLater {
+                    close(OK_EXIT_CODE)
+                    Messages.showInfoMessage(
+                        TfsBundle.message("ImportProjectWizard.success.message", context.serverUrl ?: "", context.collection ?: "", context.localPath ?: ""),
+                        TfsBundle.message("ImportProjectWizard.success.title")
+                    )
+                }
+            } catch (e: Exception) {
+                SwingUtilities.invokeLater {
+                    setImporting(false)
+                    Messages.showErrorDialog(
+                        contentPanel,
+                        TfsBundle.message("ImportProjectWizard.error.importFailed", e.message ?: ""),
+                        TfsBundle.message("ImportProjectWizard.error.importFailed.title")
+                    )
                 }
             }
-        })
+        }, "TFS-Import")
+        importThread!!.start()
+    }
+
+    /**
+     * 取消导入
+     */
+    private fun cancelImport() {
+        importCancelled = true
+    }
+
+    /**
+     * 切换导入中状态
+     */
+    private fun setImporting(importing: Boolean) {
+        progressPanel.isVisible = importing
+        previousButton.isEnabled = !importing && currentStepIndex > 0
+        nextButton.isEnabled = !importing && currentStepIndex < steps.size - 1
+        setOKActionEnabled(!importing && currentStepIndex == steps.size - 1)
+
+        if (importing) {
+            progressBar.isIndeterminate = true
+        }
     }
 
     override fun getDimensionServiceKey(): String = "TfsImportProjectWizard"
+
+    override fun doCancelAction() {
+        if (importThread?.isAlive == true) {
+            cancelImport()
+        }
+        super.doCancelAction()
+    }
 
     override fun getPreferredFocusedComponent(): JComponent? {
         return if (currentStepIndex in steps.indices) {

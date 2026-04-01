@@ -1,6 +1,7 @@
 package com.github.lizhanyin.tfs.wizard.step
 
 import com.github.lizhanyin.tfs.TfsBundle
+import com.github.lizhanyin.tfs.client.ui.framework.UIContext
 import com.github.lizhanyin.tfs.services.TfsConnectionService
 import com.github.lizhanyin.tfs.settings.TfsServerConfiguration
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext
@@ -11,9 +12,6 @@ import com.intellij.ui.CollectionComboBoxModel
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.FormBuilder
 import com.intellij.util.ui.JBUI
-import com.microsoft.tfs.core.TFSConnection
-import com.microsoft.tfs.core.httpclient.JwtCredentials
-import com.sun.jna.platform.win32.Advapi32Util.Account
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.event.ItemEvent
@@ -172,7 +170,6 @@ class ServerSelectionStep(context: ImportProjectContext) :
         val selected = selectedServer
         if (selected != null) {
             context.serverUrl = selected.url
-            context.collectionName = selected.collection
 
             if (selected.authType.isNotEmpty()) {
                 try {
@@ -189,14 +186,7 @@ class ServerSelectionStep(context: ImportProjectContext) :
             val connectionService = ApplicationManager.getApplication()
                 .getService(TfsConnectionService::class.java)
 
-//            val deviceFlowCallback: Action<DeviceFlowResponse?>? = getDeviceFlowCallback()
-//            val vstsCredentials: AtomicReference<JwtCredentials?> = AtomicReference<JwtCredentials?>()
-//
-//            val accounts: MutableList<Account?>? = getUserAccounts(vstsCredentials, deviceFlowCallback)
-//
-//            val configurationServers: MutableList<TFSConnection?>? =
-//                getConfigurationServers(accounts, vstsCredentials, deviceFlowCallback)
-//            setPageData(configurationServers)
+            context.tfsConn = connectionService.getConnection(context)
         }
         return true
     }

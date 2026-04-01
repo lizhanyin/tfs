@@ -1,6 +1,7 @@
 package com.github.lizhanyin.tfs.wizard.step
 
 import com.github.lizhanyin.tfs.TfsBundle
+import com.github.lizhanyin.tfs.client.catalog.CrossCollectionProjectInfo
 import com.github.lizhanyin.tfs.services.TfsConnectionService
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext
 import com.intellij.openapi.application.ApplicationManager
@@ -62,7 +63,7 @@ class CollectionSelectionStep(context: ImportProjectContext) :
     private lateinit var userNameLabel: JLabel
     private lateinit var tipLabel: JBLabel
 
-    private val allProjects = mutableListOf<String>()
+    private val allProjects = mutableListOf<CrossCollectionProjectInfo>()
 
     override fun buildComponent(): JComponent {
         val panel = JPanel(BorderLayout(0, JBUI.scale(8)))
@@ -209,9 +210,9 @@ class CollectionSelectionStep(context: ImportProjectContext) :
             append(TfsBundle.message("TeamProjectSelectionStep.label.serverUrl"))
             append(" ")
             append(context.serverUrl ?: "")
-            val collection = context.collectionName
-            if (!collection.isNullOrEmpty()) {
-                append("/").append(collection)
+            val collection = context.collection
+            if (collection != null) {
+                append("/").append(collection.collectionName)
             }
         }
         if (::serverUrlLabel.isInitialized) {
@@ -266,7 +267,7 @@ class CollectionSelectionStep(context: ImportProjectContext) :
 
                     SwingUtilities.invokeLater {
                         allProjects.clear()
-                        allProjects.addAll(projects.sorted())
+                        allProjects.addAll(projects.sortedBy { it.name })
                         tableModel.setData(allProjects)
                         tableModel.filter(filterField.text.trim())
 
@@ -277,7 +278,7 @@ class CollectionSelectionStep(context: ImportProjectContext) :
                             statusLabel.text = TfsBundle.message(
                                 "TeamProjectSelectionStep.status.loaded", projects.size
                             )
-                            statusLabel.foreground = Color(0, 128, 0)
+                            statusLabel.foreground = JBColor.GRAY
                         }
 
                         table.isEnabled = true
@@ -312,11 +313,10 @@ class CollectionSelectionStep(context: ImportProjectContext) :
             TfsBundle.message("TeamProjectSelectionStep.table.column.name"),
             TfsBundle.message("TeamProjectSelectionStep.table.column.collection")
         )
-        private val collectionName: String get() = context.collectionName ?: ""
-        private var allData: List<String> = emptyList()
-        private var filteredData: List<String> = emptyList()
+        private var allData: List<CrossCollectionProjectInfo> = emptyList()
+        private var filteredData: List<CrossCollectionProjectInfo> = emptyList()
 
-        fun setData(data: List<String>) {
+        fun setData(data: List<CrossCollectionProjectInfo>) {
             allData = data.toList()
             filteredData = allData
             fireTableDataChanged()
@@ -326,12 +326,12 @@ class CollectionSelectionStep(context: ImportProjectContext) :
             filteredData = if (text.isEmpty()) {
                 allData
             } else {
-                allData.filter { it.contains(text, ignoreCase = true) }
+                allData.filter { it.name.contains(text, ignoreCase = true) }
             }
             fireTableDataChanged()
         }
 
-        fun getSelectedItem(): String? {
+        fun getSelectedItem(): CrossCollectionProjectInfo? {
             val row = table.selectedRow
             return if (row in filteredData.indices) filteredData[row] else null
         }
@@ -343,9 +343,10 @@ class CollectionSelectionStep(context: ImportProjectContext) :
         override fun getColumnName(column: Int): String = columnNames[column]
 
         override fun getValueAt(rowIndex: Int, columnIndex: Int): Any {
+            val project = filteredData[rowIndex]
             return when (columnIndex) {
-                0 -> filteredData[rowIndex]
-                1 -> collectionName
+                0 -> project.name
+                1 -> project.collectionName
                 else -> ""
             }
         }
@@ -360,7 +361,7 @@ class CollectionSelectionStep(context: ImportProjectContext) :
     override fun onFinish(): Boolean {
         val selected = tableModel.getSelectedItem()
         if (selected != null) {
-            context.teamProject = selected
+            context.collection = selected
         }
         return true
     }

@@ -1,7 +1,13 @@
 package com.github.lizhanyin.tfs.services.impl;
 
+import com.github.lizhanyin.tfs.client.catalog.CrossCollectionProjectInfo;
+import com.github.lizhanyin.tfs.client.catalog.TeamProjectCollectionInfo;
+import com.github.lizhanyin.tfs.client.commands.QueryProjectCollectionsCommand;
+import com.github.lizhanyin.tfs.client.commands.QueryTeamProjectsCommand;
 import com.github.lizhanyin.tfs.client.credentials.IdeaCredentialsManagerFactory;
+import com.github.lizhanyin.tfs.client.framework.command.CommandExecutor;
 import com.github.lizhanyin.tfs.client.framework.command.ICommandExecutor;
+import com.github.lizhanyin.tfs.client.framework.command.ThreadedCancellableCommand;
 import com.github.lizhanyin.tfs.client.ui.framework.UIContext;
 import com.github.lizhanyin.tfs.client.ui.framework.command.UICommandFinishedCallbackFactory;
 import com.github.lizhanyin.tfs.client.ui.framework.command.WizardContainerCommandExecutor;
@@ -12,8 +18,12 @@ import com.github.lizhanyin.tfs.settings.TfsServerConfiguration;
 import com.github.lizhanyin.tfs.startup.TfsNativeLibraryInitializer;
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.ProgressManager;
+import com.microsoft.tfs.core.TFSConfigurationServer;
 import com.microsoft.tfs.core.TFSConnection;
 import com.microsoft.tfs.core.TFSTeamProjectCollection;
+import com.microsoft.tfs.core.clients.commonstructure.ProjectInfo;
 import com.microsoft.tfs.core.clients.versioncontrol.VersionControlClient;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Item;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
@@ -144,22 +154,82 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
 
 
     private ICommandExecutor getCommandExecutor(UIContext uiContext) {
-        return new WizardContainerCommandExecutor(uiContext);
+        // 优先使用 UIContext 中携带的 ProgressIndicator
+        if (uiContext.getProgressIndicator() != null) {
+            return new WizardContainerCommandExecutor(uiContext);
+        }
+
+        // 尝试获取当前线程的 ProgressIndicator（在 Task.Modal/Backgroundable 内）
+        final ProgressIndicator currentIndicator = ProgressManager.getInstance().getProgressIndicator();
+        if (currentIndicator != null) {
+            return new WizardContainerCommandExecutor(UIContext.of(
+                    uiContext.getProject(), uiContext.getParentComponent(), currentIndicator));
+        }
+
+        // 无 ProgressIndicator 时使用不需要进度的执行器
+        return new CommandExecutor();
     }
 
     // ==================== 获取团队项目 ====================
 
     @Override
-    @NotNull
-    public List<String> getTeamProjects(@NotNull ImportProjectContext context) throws Exception {
-        TFSTeamProjectCollection tpc = null;
-        try {
-            tpc = smartConnect(context);
-            return getTeamProjectNames(tpc);
-        } finally {
-            closeConnection(tpc);
+    public @NotNull List<CrossCollectionProjectInfo> getTeamProjects(@NotNull ImportProjectContext context) throws Exception {
+        List<CrossCollectionProjectInfo> projects = new ArrayList<>(100);
+
+        TFSConnection connection = context.getTfsConn();
+
+        TFSConfigurationServer configurationServer = null;
+        if (connection instanceof TFSConfigurationServer) {
+            configurationServer = (TFSConfigurationServer) connection;
+        } else if (connection instanceof TFSTeamProjectCollection) {
+            configurationServer = ((TFSTeamProjectCollection) connection).getConfigurationServer();
         }
+
+        if (configurationServer == null) {
+            log.error(new IllegalArgumentException("Unexpected connection type: " + connection.getClass().getName())); //$NON-NLS-1$
+            return projects;
+        }
+
+        final List<TFSTeamProjectCollection> collections = new ArrayList<>(5);
+        final QueryProjectCollectionsCommand queryCommand = new QueryProjectCollectionsCommand(configurationServer);
+
+        final IStatus status = getCommandExecutor(context.getUiContext()).execute(new ThreadedCancellableCommand(queryCommand));
+        if (!status.isOK()) {
+            return projects;
+        }
+
+        final TeamProjectCollectionInfo[] projectCollections = queryCommand.getProjectCollections();
+        for (final TeamProjectCollectionInfo collectionInfo : projectCollections) {
+            try {
+                collections.add(
+                        configurationServer.getTeamProjectCollection(collectionInfo.getIdentifier()));
+            } catch (final Exception e) {
+                log.warn("Failed to get Team Project Collection: " + collectionInfo.getDisplayName()); //$NON-NLS-1$
+                log.warn(e);
+            }
+        }
+
+        // For each collection get the list of projects
+        for (final TFSTeamProjectCollection collection : collections) {
+            final QueryTeamProjectsCommand queryCommand2 = new QueryTeamProjectsCommand(collection);
+            final IStatus status2 = getCommandExecutor(context.getUiContext()).execute(new ThreadedCancellableCommand(queryCommand2));
+            if (!status2.isOK()) {
+                continue;
+            }
+            final ProjectInfo[] projectInfos = queryCommand2.getProjects();
+            for (final ProjectInfo info : projectInfos) {
+                final CrossCollectionProjectInfo pi = new CrossCollectionProjectInfo(
+                        collection,
+                        info.getName(),
+                        info.getURI(),
+                        collection.getName(),
+                        collection.getBaseURI().getHost());
+                projects.add(pi);
+            }
+        }
+        return projects;
     }
+
 
     @Override
     @NotNull
@@ -341,13 +411,10 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
 
         urlsToTry.add(serverUrl);
 
-        if (context.getCollectionName() != null && !context.getCollectionName().isEmpty()) {
-            urlsToTry.add(serverUrl + "/" + context.getCollectionName());
+        if (context.getCollection() != null) {
+            urlsToTry.add(serverUrl + "/" + context.getCollection().getCollectionName());
         }
 
-        if (!"DefaultCollection".equals(context.getCollectionName())) {
-            urlsToTry.add(serverUrl + "/DefaultCollection");
-        }
         return urlsToTry;
     }
 

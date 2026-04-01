@@ -1,7 +1,9 @@
 package com.github.lizhanyin.tfs.wizard
 
 import com.github.lizhanyin.tfs.TfsBundle
+import com.github.lizhanyin.tfs.client.catalog.CrossCollectionProjectInfo
 import com.github.lizhanyin.tfs.client.ui.framework.UIContext
+import com.microsoft.tfs.core.TFSConnection
 import java.net.URI
 
 /**
@@ -12,16 +14,16 @@ class ImportProjectContext {
 
     // UI 上下文（类似 SWT Shell）
     var uiContext: UIContext = UIContext(null)
+    var tfsConn : TFSConnection? = null
     // 服务器信息
     var serverUrl: String? = null
-    var collectionName: String? = null
     var username: String? = null
     var password: String? = null
     var domain: String? = null
     var authType: AuthType = AuthType.BASIC
 
     // 团队项目
-    var teamProject: String? = null
+    var collection: CrossCollectionProjectInfo? = null
 
     // 选中的项目/分支
     val selectedProjects: MutableList<String> = mutableListOf()
@@ -36,8 +38,8 @@ class ImportProjectContext {
         get() {
             val url = serverUrl ?: return ""
             val baseUrl = url.trimEnd('/')
-            val collection = collectionName
-            return if (collection.isNullOrEmpty()) baseUrl else "$baseUrl/$collection"
+            val collection = collection
+            return if (collection == null) baseUrl else "$baseUrl/$collection"
         }
 
     /**
@@ -48,7 +50,7 @@ class ImportProjectContext {
     /**
      * 检查是否已选择团队项目
      */
-    fun isTeamProjectSelected(): Boolean = !teamProject.isNullOrEmpty()
+    fun isTeamProjectSelected(): Boolean = collection != null
 
     fun getServerUri(): URI = URI(serverUrl ?: "")
 

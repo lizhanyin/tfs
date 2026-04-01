@@ -40,4 +40,19 @@ public class WizardContainerCommandExecutor extends RunnableContextCommandExecut
         Check.notNull(uiContext, "uiContext"); //$NON-NLS-1$
         Check.notNull(progressIndicator, "progressIndicator"); //$NON-NLS-1$
     }
+
+    /**
+     * Creates a new {@link WizardContainerCommandExecutor} that uses the
+     * {@link ProgressIndicator} from the specified {@link UIContext}.
+     *
+     * @param uiContext
+     *        the {@link UIContext} (must not be <code>null</code>,
+     *        must contain a non-null {@link ProgressIndicator})
+     */
+    public WizardContainerCommandExecutor(final UIContext uiContext) {
+        super(uiContext, uiContext.getProgressIndicator());
+
+        Check.notNull(uiContext, "uiContext"); //$NON-NLS-1$
+        Check.notNull(uiContext.getProgressIndicator(), "progressIndicator"); //$NON-NLS-1$
+    }
 }

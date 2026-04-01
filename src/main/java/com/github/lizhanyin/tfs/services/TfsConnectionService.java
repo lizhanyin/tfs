@@ -1,5 +1,6 @@
 package com.github.lizhanyin.tfs.services;
 
+import com.github.lizhanyin.tfs.client.catalog.CrossCollectionProjectInfo;
 import com.github.lizhanyin.tfs.settings.TfsServerConfiguration;
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext;
 import com.microsoft.tfs.core.TFSConnection;
@@ -40,8 +41,7 @@ public interface TfsConnectionService {
      * @return 团队项目名称列表
      * @throws Exception 如果连接或查询失败
      */
-    @NotNull
-    List<String> getTeamProjects(@NotNull ImportProjectContext context) throws Exception;
+    @NotNull List<CrossCollectionProjectInfo> getTeamProjects(@NotNull ImportProjectContext context) throws Exception;
 
     /**
      * 使用存储的服务器配置获取团队项目列表

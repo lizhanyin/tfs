@@ -141,37 +141,37 @@ class ProjectSelectionStep(context: ImportProjectContext) :
 
                 try {
                     val connectionService = ApplicationManager.getApplication().getService(TfsConnectionService::class.java)
-                    val teamProject = context.teamProject ?: return
+                    val teamProject = context.collection ?: return
 
-                    val serverItems = connectionService.getProjectItems(context, teamProject)
-
-                    // 转换为本地项目项
-                    val projectItems = mutableListOf<ProjectItem>()
-                    for (item in serverItems) {
-                        if (item.isFolder) {
-                            val projectItem = ProjectItem(item.serverPath, item.name)
-                            // 如果是文件夹，递归加载子项
-                            loadChildren(projectItem, connectionService, indicator)
-                            projectItems.add(projectItem)
-                        }
-                    }
+//                    val serverItems = connectionService.getProjectItems(context, teamProject)
+//
+//                    // 转换为本地项目项
+//                    val projectItems = mutableListOf<ProjectItem>()
+//                    for (item in serverItems) {
+//                        if (item.isFolder) {
+//                            val projectItem = ProjectItem(item.serverPath, item.name)
+//                            // 如果是文件夹，递归加载子项
+//                            loadChildren(projectItem, connectionService, indicator)
+//                            projectItems.add(projectItem)
+//                        }
+//                    }
 
                     // 更新 UI
-                    SwingUtilities.invokeLater {
-                        projects.clear()
-                        projects.addAll(projectItems)
-                        buildProjectTree()
-
-                        val itemCount = countLeafNodes(rootTreeNode)
-                        if (itemCount == 0) {
-                            statusLabel.text = TfsBundle.message("ProjectSelectionStep.status.noResults")
-                            statusLabel.foreground = JBColor.ORANGE
-                        } else {
-                            statusLabel.text = TfsBundle.message("ProjectSelectionStep.status.loaded", itemCount)
-                            statusLabel.foreground = Color(0, 128, 0)
-                        }
-                        refreshButton.isEnabled = true
-                    }
+//                    SwingUtilities.invokeLater {
+//                        projects.clear()
+//                        projects.addAll(projectItems)
+//                        buildProjectTree()
+//
+//                        val itemCount = countLeafNodes(rootTreeNode)
+//                        if (itemCount == 0) {
+//                            statusLabel.text = TfsBundle.message("ProjectSelectionStep.status.noResults")
+//                            statusLabel.foreground = JBColor.ORANGE
+//                        } else {
+//                            statusLabel.text = TfsBundle.message("ProjectSelectionStep.status.loaded", itemCount)
+//                            statusLabel.foreground = Color(0, 128, 0)
+//                        }
+//                        refreshButton.isEnabled = true
+//                    }
 
                 } catch (e: Exception) {
                     SwingUtilities.invokeLater {

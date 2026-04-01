@@ -6,9 +6,9 @@ package com.github.lizhanyin.tfs.client.ui.tasks;
 import java.net.URI;
 
 import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.openapi.project.Project;
 import com.microsoft.tfs.core.TFSTeamProjectCollection;
 
+import com.github.lizhanyin.tfs.client.ui.framework.UIContext;
 import com.github.lizhanyin.tfs.client.ui.commands.ConnectCommand;
 import com.github.lizhanyin.tfs.client.ui.commands.ConnectToConfigurationServerCommand;
 import com.microsoft.tfs.core.httpclient.Credentials;
@@ -25,11 +25,11 @@ public class ConnectToConfigurationServerTask extends ConnectTask {
      * Connects to the given server URI.
      *
      * @param project
-     *        a valid {@link Project}
+     *        a valid {@link UIContext}
      * @param serverURI
      *        the server URI to connect to
      */
-    public ConnectToConfigurationServerTask(final Project project, final URI serverURI) {
+    public ConnectToConfigurationServerTask(final UIContext project, final URI serverURI) {
         super(project, serverURI, null);
     }
 
@@ -43,7 +43,7 @@ public class ConnectToConfigurationServerTask extends ConnectTask {
      * @param credentials
      *        the credentials to connect with (or <code>null</code>)
      */
-    public ConnectToConfigurationServerTask(final Project project, final URI serverURI, final Credentials credentials) {
+    public ConnectToConfigurationServerTask(final UIContext project, final URI serverURI, final Credentials credentials) {
         super(project, serverURI, credentials);
     }
 

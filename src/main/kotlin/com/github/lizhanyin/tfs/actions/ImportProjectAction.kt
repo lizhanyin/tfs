@@ -24,8 +24,7 @@ class ImportProjectAction : AnAction() {
             // TODO: 执行实际的导入操作
             println("导入配置:")
             println("  服务器: ${context.serverUrl}")
-            println("  集合: ${context.collectionName}")
-            println("  团队项目: ${context.teamProject}")
+            println(context.collection?.let { "  集合: ${it.collectionName}" })
             println("  本地路径: ${context.localPath}")
             println("  选中项目: ${context.selectedProjects}")
         }

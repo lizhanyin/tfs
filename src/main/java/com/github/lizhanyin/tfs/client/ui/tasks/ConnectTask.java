@@ -6,21 +6,18 @@ package com.github.lizhanyin.tfs.client.ui.tasks;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.github.lizhanyin.tfs.client.Messages;
 import com.github.lizhanyin.tfs.client.credentials.IdeaCredentialsManagerFactory;
 import com.github.lizhanyin.tfs.client.framework.command.ThreadedCancellableCommand;
-import com.github.lizhanyin.tfs.client.framework.helper.UIHelpers;
-import com.github.lizhanyin.tfs.client.framework.status.TeamExplorerStatus;
 import com.github.lizhanyin.tfs.runtime.IStatus;
 import com.github.lizhanyin.tfs.runtime.Status;
 import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.openapi.project.Project;
 import com.microsoft.tfs.core.config.persistence.DefaultPersistenceStoreProvider;
 import com.microsoft.tfs.core.credentials.CachedCredentials;
 import com.microsoft.tfs.core.httpclient.DefaultNTCredentials;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import com.github.lizhanyin.tfs.client.ui.framework.UIContext;
 import com.github.lizhanyin.tfs.client.ui.commands.ConnectCommand;
 import com.github.lizhanyin.tfs.settings.TfsServerConfiguration;
 import com.microsoft.tfs.core.TFSConnection;
@@ -50,11 +47,11 @@ public abstract class ConnectTask extends BaseTask  {
      * Connects to the given server URI.
      *
      * @param project
-     *        a valid {@link Project}
+     *        a valid {@link UIContext}
      * @param serverURI
      *        the server URI to connect to
      */
-    public ConnectTask(@Nullable final Project project, final URI serverURI) {
+    public ConnectTask(@Nullable final UIContext project, final URI serverURI) {
         this(project, serverURI, null);
     }
 
@@ -66,7 +63,7 @@ public abstract class ConnectTask extends BaseTask  {
      * @param serverURI the server URI to connect to
      * @param credentials the credentials to use (may be null for default credentials)
      */
-    protected ConnectTask(@Nullable final Project project, @NotNull final URI serverURI, @Nullable final Credentials credentials) {
+    protected ConnectTask(@Nullable final UIContext project, @NotNull final URI serverURI, @Nullable final Credentials credentials) {
         super(project);
         this.serverURI = serverURI;
         this.credentials = credentials;
@@ -80,7 +77,7 @@ public abstract class ConnectTask extends BaseTask  {
      * @param project the IDEA project (may be null)
      * @param serverConfig the server configuration containing URL and credentials
      */
-    protected ConnectTask(@Nullable final Project project, @NotNull final TfsServerConfiguration.ServerConfig serverConfig) {
+    protected ConnectTask(@Nullable final UIContext project, @NotNull final TfsServerConfiguration.ServerConfig serverConfig) {
         super(project);
         this.serverURI = parseUri(serverConfig.getUrl());
         this.credentials = createCredentialsFromConfig(serverConfig);
