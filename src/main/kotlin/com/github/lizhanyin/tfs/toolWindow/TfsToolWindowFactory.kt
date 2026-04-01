@@ -88,16 +88,16 @@ class TfsToolWindowFactory : ToolWindowFactory {
                 statusLabel.text = "未检测到工作区"
                 workspaceLabel.text = "请确保项目目录在 TFS 工作区映射中"
 
-                // 尝试检测工作区
-                tfsService.detectWorkspace()
-                    .thenAccept { ws ->
-                        if (ws != null) {
-                            com.intellij.openapi.application.ApplicationManager.getApplication().invokeLater {
-                                statusLabel.text = "已连接"
-                                workspaceLabel.text = "<html><b>工作区:</b> ${ws.name()}<br><b>服务器:</b> ${ws.serverUrl()}</html>"
-                            }
-                        }
-                    }
+//                // 尝试检测工作区
+//                tfsService.detectWorkspace()
+//                    .thenAccept { ws ->
+//                        if (ws != null) {
+//                            com.intellij.openapi.application.ApplicationManager.getApplication().invokeLater {
+//                                statusLabel.text = "已连接"
+//                                workspaceLabel.text = "<html><b>工作区:</b> ${ws.name()}<br><b>服务器:</b> ${ws.serverUrl()}</html>"
+//                            }
+//                        }
+//                    }
             }
         }
     }

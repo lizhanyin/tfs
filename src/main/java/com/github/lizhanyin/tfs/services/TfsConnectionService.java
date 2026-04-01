@@ -1,7 +1,6 @@
 package com.github.lizhanyin.tfs.services;
 
 import com.github.lizhanyin.tfs.client.catalog.CrossCollectionProjectInfo;
-import com.github.lizhanyin.tfs.settings.TfsServerConfiguration;
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext;
 import com.microsoft.tfs.core.TFSConnection;
 import org.jetbrains.annotations.NotNull;
@@ -44,17 +43,6 @@ public interface TfsConnectionService {
     @NotNull List<CrossCollectionProjectInfo> getTeamProjects(@NotNull ImportProjectContext context) throws Exception;
 
     /**
-     * 使用存储的服务器配置获取团队项目列表
-     *
-     * @param serverConfig 服务器配置
-     * @return 团队项目名称列表
-     * @throws Exception 如果连接或查询失败
-     */
-    @NotNull
-    @Deprecated
-    List<String> getTeamProjects(@NotNull TfsServerConfiguration.ServerConfig serverConfig) throws Exception;
-
-    /**
      * 获取服务器项目结构（文件夹和文件）
      *
      * @param context     导入项目上下文
@@ -66,18 +54,6 @@ public interface TfsConnectionService {
     List<ProjectItemInfo> getProjectItems(@NotNull ImportProjectContext context, @NotNull String teamProject) throws Exception;
 
     /**
-     * 获取服务器项目结构（文件夹和文件）
-     *
-     * @param serverConfig 服务器配置
-     * @param teamProject  团队项目名称
-     * @return 项目项列表
-     * @throws Exception 如果连接或查询失败
-     */
-    @NotNull
-    @Deprecated
-    List<ProjectItemInfo> getProjectItems(@NotNull TfsServerConfiguration.ServerConfig serverConfig, @NotNull String teamProject) throws Exception;
-
-    /**
      * 获取子项目
      *
      * @param context    导入项目上下文
@@ -87,18 +63,6 @@ public interface TfsConnectionService {
      */
     @NotNull
     List<ProjectItemInfo> getChildItems(@NotNull ImportProjectContext context, @NotNull String parentPath) throws Exception;
-
-    /**
-     * 获取子项目
-     *
-     * @param serverConfig 服务器配置
-     * @param parentPath   父路径
-     * @return 子项目列表
-     * @throws Exception 如果连接或查询失败
-     */
-    @NotNull
-    @Deprecated
-    List<ProjectItemInfo> getChildItems(@NotNull TfsServerConfiguration.ServerConfig serverConfig, @NotNull String parentPath) throws Exception;
 
     /**
      * 项目项信息

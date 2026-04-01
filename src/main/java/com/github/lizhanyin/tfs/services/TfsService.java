@@ -1,7 +1,5 @@
 package com.github.lizhanyin.tfs.services;
 
-import com.github.lizhanyin.tfs.api.command.TfsCommandLineClient;
-import com.github.lizhanyin.tfs.api.rest.TfsRestClient;
 import com.github.lizhanyin.tfs.model.TfsWorkspace;
 import com.github.lizhanyin.tfs.settings.TfsSettings;
 import com.intellij.openapi.components.Service;
@@ -23,8 +21,6 @@ public final class TfsService {
 
     private final Project project;
     private final TfsSettings settings;
-    private TfsRestClient restClient;
-    private TfsCommandLineClient commandClient;
     private TfsWorkspace currentWorkspace;
     private boolean initialized = false;
 
@@ -47,47 +43,32 @@ public final class TfsService {
         }
 
         try {
-            // 初始化 REST 客户端
-            restClient = new TfsRestClient(
-                    settings.getCollectionUrl(),
-                    settings.getAuthType(),
-                    settings.getUsername(),
-                    settings.getPassword(),
-                    settings.getDomain()
-            );
-
-            // 初始化命令行客户端
-            commandClient = new TfsCommandLineClient(
-                    settings.getTfExePath(),
-                    project.getBasePath()
-            );
-
             initialized = true;
             LOG.info("TFS service initialized successfully");
         } catch (Exception e) {
             LOG.error("Failed to initialize TFS service", e);
         }
     }
-
-    /**
-     * 检测并加载工作区信息
-     */
-    public CompletableFuture<TfsWorkspace> detectWorkspace() {
-        if (commandClient == null) {
-            return CompletableFuture.failedFuture(
-                    new IllegalStateException("TFS service not initialized"));
-        }
-
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                currentWorkspace = commandClient.getWorkspaceInfo();
-                return currentWorkspace;
-            } catch (Exception e) {
-                LOG.error("Failed to detect workspace", e);
-                throw new RuntimeException(e);
-            }
-        });
-    }
+//
+//    /**
+//     * 检测并加载工作区信息
+//     */
+//    public CompletableFuture<TfsWorkspace> detectWorkspace() {
+//        if (commandClient == null) {
+//            return CompletableFuture.failedFuture(
+//                    new IllegalStateException("TFS service not initialized"));
+//        }
+//
+//        return CompletableFuture.supplyAsync(() -> {
+//            try {
+//                currentWorkspace = commandClient.getWorkspaceInfo();
+//                return currentWorkspace;
+//            } catch (Exception e) {
+//                LOG.error("Failed to detect workspace", e);
+//                throw new RuntimeException(e);
+//            }
+//        });
+//    }
 
     /**
      * 获取当前工作区
@@ -95,22 +76,6 @@ public final class TfsService {
     @Nullable
     public TfsWorkspace getCurrentWorkspace() {
         return currentWorkspace;
-    }
-
-    /**
-     * 获取 REST 客户端
-     */
-    @Nullable
-    public TfsRestClient getRestClient() {
-        return restClient;
-    }
-
-    /**
-     * 获取命令行客户端
-     */
-    @Nullable
-    public TfsCommandLineClient getCommandClient() {
-        return commandClient;
     }
 
     /**
@@ -140,8 +105,6 @@ public final class TfsService {
      */
     public synchronized void reinitialize() {
         initialized = false;
-        restClient = null;
-        commandClient = null;
         currentWorkspace = null;
         initialize();
     }

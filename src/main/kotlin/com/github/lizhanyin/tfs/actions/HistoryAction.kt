@@ -25,22 +25,22 @@ class HistoryAction : AnAction() {
     }
 
     override fun actionPerformed(e: AnActionEvent) {
-        val project = e.project ?: return
-        val file = e.getData(CommonDataKeys.VIRTUAL_FILE) ?: return
-
-        val tfsService = TfsService.getInstance(project)
-        val commandClient = tfsService.commandClient ?: return
-
-        // 获取历史记录
-        commandClient.getHistory(file.path, false, 50)
-            .thenAccept { history ->
-                // TODO: 显示历史记录对话框
-                showHistoryDialog(project, file, history)
-            }
-            .exceptionally { e ->
-                showError(project, "获取历史记录失败: ${e.message}")
-                null
-            }
+//        val project = e.project ?: return
+//        val file = e.getData(CommonDataKeys.VIRTUAL_FILE) ?: return
+//
+//        val tfsService = TfsService.getInstance(project)
+//        val commandClient = tfsService.commandClient ?: return
+//
+//        // 获取历史记录
+//        commandClient.getHistory(file.path, false, 50)
+//            .thenAccept { history ->
+//                // TODO: 显示历史记录对话框
+//                showHistoryDialog(project, file, history)
+//            }
+//            .exceptionally { e ->
+//                showError(project, "获取历史记录失败: ${e.message}")
+//                null
+//            }
     }
 
     private fun showHistoryDialog(project: Project, file: VirtualFile, history: String) {

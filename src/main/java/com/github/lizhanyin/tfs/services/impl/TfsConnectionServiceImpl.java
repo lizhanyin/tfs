@@ -144,12 +144,19 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
         final CredentialsManager credentialsManager =
                 IdeaCredentialsManagerFactory.getCredentialsManager(DefaultPersistenceStoreProvider.INSTANCE);
 
-        if (credentials != null && !(credentials instanceof DefaultNTCredentials)) {
-            log.debug("Save the new Cookie Credentials in the Eclipse secure storage for future sessions."); //$NON-NLS-1$
-            credentialsManager.setCredentials(new CachedCredentials(accountUrl, credentials));
-        } else {
-            credentialsManager.removeCredentials(accountUrl);
-        }
+        // PasswordSafe.setPassword() 是慢操作，不允许在 EDT 上执行
+        com.intellij.openapi.application.ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            try {
+                if (credentials != null && !(credentials instanceof DefaultNTCredentials)) {
+                    log.debug("Save the new Cookie Credentials in the Eclipse secure storage for future sessions."); //$NON-NLS-1$
+                    credentialsManager.setCredentials(new CachedCredentials(accountUrl, credentials));
+                } else {
+                    credentialsManager.removeCredentials(accountUrl);
+                }
+            } catch (final Exception e) {
+                log.error("Error writing credentials to the IntelliJ IDEA secure store", e); //$NON-NLS-1$
+            }
+        });
     }
 
 
@@ -230,20 +237,6 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
         return projects;
     }
 
-
-    @Override
-    @NotNull
-    @Deprecated
-    public List<String> getTeamProjects(@NotNull TfsServerConfiguration.ServerConfig serverConfig) throws Exception {
-        TFSTeamProjectCollection tpc = null;
-        try {
-            tpc = smartConnectFromConfig(serverConfig);
-            return getTeamProjectNames(tpc);
-        } finally {
-            closeConnection(tpc);
-        }
-    }
-
     // ==================== 获取项目项 ====================
 
     @Override
@@ -258,19 +251,6 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
         }
     }
 
-    @Override
-    @NotNull
-    @Deprecated
-    public List<ProjectItemInfo> getProjectItems(@NotNull TfsServerConfiguration.ServerConfig serverConfig, @NotNull String teamProject) throws Exception {
-        TFSTeamProjectCollection tpc = null;
-        try {
-            tpc = smartConnectFromConfig(serverConfig);
-            return doGetProjectItems(tpc, teamProject);
-        } finally {
-            closeConnection(tpc);
-        }
-    }
-
     // ==================== 获取子项目 ====================
 
     @Override
@@ -279,19 +259,6 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
         TFSTeamProjectCollection tpc = null;
         try {
             tpc = smartConnect(context);
-            return doGetChildItems(tpc, parentPath);
-        } finally {
-            closeConnection(tpc);
-        }
-    }
-
-    @Override
-    @NotNull
-    @Deprecated
-    public List<ProjectItemInfo> getChildItems(@NotNull TfsServerConfiguration.ServerConfig serverConfig, @NotNull String parentPath) throws Exception {
-        TFSTeamProjectCollection tpc = null;
-        try {
-            tpc = smartConnectFromConfig(serverConfig);
             return doGetChildItems(tpc, parentPath);
         } finally {
             closeConnection(tpc);

@@ -41,26 +41,26 @@ class UndoAction : AnAction() {
             return
         }
 
-        val tfsService = TfsService.getInstance(project)
-        val commandClient = tfsService.commandClient ?: return
-
-        val filePaths = files.map { it.path }
-
-        // 异步执行撤销
-        commandClient.undo(filePaths, true)
-            .thenAccept { success ->
-                if (success) {
-                    // 刷新文件
-                    files.forEach { it.refresh(false, true) }
-                    showSuccess(project, "撤销成功")
-                } else {
-                    showError(project, "撤销失败")
-                }
-            }
-            .exceptionally { e ->
-                showError(project, "撤销失败: ${e.message}")
-                null
-            }
+//        val tfsService = TfsService.getInstance(project)
+//        val commandClient = tfsService.commandClient ?: return
+//
+//        val filePaths = files.map { it.path }
+//
+//        // 异步执行撤销
+//        commandClient.undo(filePaths, true)
+//            .thenAccept { success ->
+//                if (success) {
+//                    // 刷新文件
+//                    files.forEach { it.refresh(false, true) }
+//                    showSuccess(project, "撤销成功")
+//                } else {
+//                    showError(project, "撤销失败")
+//                }
+//            }
+//            .exceptionally { e ->
+//                showError(project, "撤销失败: ${e.message}")
+//                null
+//            }
     }
 
     private fun showSuccess(project: Project, message: String) {

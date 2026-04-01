@@ -46,25 +46,25 @@ class CheckinAction : AnAction() {
         }
 
         val tfsService = TfsService.getInstance(project)
-        val commandClient = tfsService.commandClient ?: return
-
-        val filePaths = files.map { it.path }
-
-        // 异步执行提交
-        commandClient.checkin(filePaths, comment, true)
-            .thenAccept { success ->
-                if (success) {
-                    // 刷新文件
-                    files.forEach { it.refresh(false, false) }
-                    showSuccess(project, "提交成功")
-                } else {
-                    showError(project, "提交失败")
-                }
-            }
-            .exceptionally { e ->
-                showError(project, "提交失败: ${e.message}")
-                null
-            }
+//        val commandClient = tfsService.commandClient ?: return
+//
+//        val filePaths = files.map { it.path }
+//
+//        // 异步执行提交
+//        commandClient.checkin(filePaths, comment, true)
+//            .thenAccept { success ->
+//                if (success) {
+//                    // 刷新文件
+//                    files.forEach { it.refresh(false, false) }
+//                    showSuccess(project, "提交成功")
+//                } else {
+//                    showError(project, "提交失败")
+//                }
+//            }
+//            .exceptionally { e ->
+//                showError(project, "提交失败: ${e.message}")
+//                null
+//            }
     }
 
     private fun showSuccess(project: Project, message: String) {

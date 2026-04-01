@@ -40,48 +40,48 @@ class TfsChangeProvider(
             return
         }
 
-        val commandClient = tfsService.commandClient ?: return
-
-        try {
-            // 获取待提交的变更
-            val pendingChanges = commandClient.pendingChanges.get()
-
-            // 更新缓存
-            pendingChangesCache.clear()
-            for (change in pendingChanges) {
-                change.localItem()?.let { pendingChangesCache[it] = change }
-            }
-            lastRefreshTime = System.currentTimeMillis()
-
-            // 构建变更列表
-            for (change in pendingChanges) {
-                val localPath = change.localItem() ?: continue
-                val file = VcsUtil.getVirtualFile(localPath) ?: continue
-
-                val ideaChange = when (change.changeType()) {
-                    PendingChange.ChangeType.ADD -> {
-                        // 新增文件
-                        Change(null, createCurrentContentRevision(file))
-                    }
-                    PendingChange.ChangeType.DELETE -> {
-                        // 删除文件
-                        Change(createCurrentContentRevision(file), null)
-                    }
-                    else -> {
-                        // 修改文件
-                        Change(createCurrentContentRevision(file), createCurrentContentRevision(file))
-                    }
-                }
-
-                builder.processChange(ideaChange, VcsKey(vcs.name))
-            }
-
-            // 处理脏范围内的未跟踪文件
-            // processUntrackedFiles(dirtyScope, builder) // 已弃用，暂时禁用
-
-        } catch (e: Exception) {
-            LOG.error("Failed to get TFS changes", e)
-        }
+//        val commandClient = tfsService.commandClient ?: return
+//
+//        try {
+//            // 获取待提交的变更
+//            val pendingChanges = commandClient.pendingChanges.get()
+//
+//            // 更新缓存
+//            pendingChangesCache.clear()
+//            for (change in pendingChanges) {
+//                change.localItem()?.let { pendingChangesCache[it] = change }
+//            }
+//            lastRefreshTime = System.currentTimeMillis()
+//
+//            // 构建变更列表
+//            for (change in pendingChanges) {
+//                val localPath = change.localItem() ?: continue
+//                val file = VcsUtil.getVirtualFile(localPath) ?: continue
+//
+//                val ideaChange = when (change.changeType()) {
+//                    PendingChange.ChangeType.ADD -> {
+//                        // 新增文件
+//                        Change(null, createCurrentContentRevision(file))
+//                    }
+//                    PendingChange.ChangeType.DELETE -> {
+//                        // 删除文件
+//                        Change(createCurrentContentRevision(file), null)
+//                    }
+//                    else -> {
+//                        // 修改文件
+//                        Change(createCurrentContentRevision(file), createCurrentContentRevision(file))
+//                    }
+//                }
+//
+//                builder.processChange(ideaChange, VcsKey(vcs.name))
+//            }
+//
+//            // 处理脏范围内的未跟踪文件
+//            // processUntrackedFiles(dirtyScope, builder) // 已弃用，暂时禁用
+//
+//        } catch (e: Exception) {
+//            LOG.error("Failed to get TFS changes", e)
+//        }
     }
 
     override fun isModifiedDocumentTrackingRequired(): Boolean = true

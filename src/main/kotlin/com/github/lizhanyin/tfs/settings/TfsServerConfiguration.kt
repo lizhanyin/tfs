@@ -89,7 +89,7 @@ class TfsServerConfiguration : PersistentStateComponent<TfsServerConfiguration> 
         var username: String? = null
         var password: String? = null  // 注意: 密码会以明文存储，实际应用中应考虑加密
         var domain: String? = null
-        var authType: String = "NTLM"
+        var authType: String = "BASIC"
 
         constructor()
 

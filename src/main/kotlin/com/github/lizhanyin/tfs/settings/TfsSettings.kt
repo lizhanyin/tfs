@@ -20,19 +20,13 @@ class TfsSettings : PersistentStateComponent<TfsSettings> {
     var collectionName: String = "DefaultCollection"
 
     // 认证类型
-    var authType: AuthType = AuthType.NTLM
+    var authType: AuthType = AuthType.BASIC
 
     // 用户名 (Basic Auth 时使用)
     var username: String = ""
 
     // 密码 (Basic Auth 时使用) - 注意: 实际应用中应加密存储
     var password: String = ""
-
-    // 域名 (NTLM 时使用)
-    var domain: String = ""
-
-    // tf.exe 路径
-    var tfExePath: String = ""
 
     // 自动检测工作区
     var autoDetectWorkspace: Boolean = true
@@ -50,7 +44,6 @@ class TfsSettings : PersistentStateComponent<TfsSettings> {
      * 认证类型
      */
     enum class AuthType {
-        NTLM,       // Windows 集成认证
         BASIC,      // 基本认证
         PAT         // 个人访问令牌 (TFS 2017+)
     }
