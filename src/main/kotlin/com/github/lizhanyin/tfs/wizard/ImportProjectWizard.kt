@@ -1,9 +1,10 @@
 package com.github.lizhanyin.tfs.wizard
 
 import com.github.lizhanyin.tfs.TfsBundle
+import com.github.lizhanyin.tfs.client.ui.framework.UIContext
 import com.github.lizhanyin.tfs.wizard.step.ProjectSelectionStep
 import com.github.lizhanyin.tfs.wizard.step.ServerSelectionStep
-import com.github.lizhanyin.tfs.wizard.step.TeamProjectSelectionStep
+import com.github.lizhanyin.tfs.wizard.step.CollectionSelectionStep
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
@@ -33,7 +34,7 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
     // 向导步骤
     private val steps = listOf(
         ServerSelectionStep(context),
-        TeamProjectSelectionStep(context),
+        CollectionSelectionStep(context),
         ProjectSelectionStep(context)
     )
     private var currentStepIndex = 0
@@ -50,6 +51,8 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
         setTitle(TfsBundle.message(TITLE))
         setOKButtonText(TfsBundle.message("ImportProjectWizard.button.import"))
         init()
+        // window 在 init() 之后才可用
+        context.uiContext = UIContext.of(project, window)
     }
 
     override fun createCenterPanel(): JComponent {

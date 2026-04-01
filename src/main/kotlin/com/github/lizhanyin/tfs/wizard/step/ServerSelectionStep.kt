@@ -1,22 +1,24 @@
 package com.github.lizhanyin.tfs.wizard.step
 
 import com.github.lizhanyin.tfs.TfsBundle
+import com.github.lizhanyin.tfs.services.TfsConnectionService
 import com.github.lizhanyin.tfs.settings.TfsServerConfiguration
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext
 import com.github.lizhanyin.tfs.wizard.dialog.ManageServersDialog
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.CollectionComboBoxModel
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.FormBuilder
 import com.intellij.util.ui.JBUI
+import com.microsoft.tfs.core.TFSConnection
+import com.microsoft.tfs.core.httpclient.JwtCredentials
+import com.sun.jna.platform.win32.Advapi32Util.Account
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.event.ItemEvent
-import javax.swing.JButton
-import javax.swing.JComponent
-import javax.swing.JLabel
-import javax.swing.JPanel
-import javax.swing.SwingUtilities
+import javax.swing.*
+
 
 /**
  * 服务器选择步骤
@@ -183,6 +185,18 @@ class ServerSelectionStep(context: ImportProjectContext) :
             context.username = selected.username
             context.password = selected.password
             context.domain = selected.domain
+
+            val connectionService = ApplicationManager.getApplication()
+                .getService(TfsConnectionService::class.java)
+
+//            val deviceFlowCallback: Action<DeviceFlowResponse?>? = getDeviceFlowCallback()
+//            val vstsCredentials: AtomicReference<JwtCredentials?> = AtomicReference<JwtCredentials?>()
+//
+//            val accounts: MutableList<Account?>? = getUserAccounts(vstsCredentials, deviceFlowCallback)
+//
+//            val configurationServers: MutableList<TFSConnection?>? =
+//                getConfigurationServers(accounts, vstsCredentials, deviceFlowCallback)
+//            setPageData(configurationServers)
         }
         return true
     }

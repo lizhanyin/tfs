@@ -7,6 +7,7 @@ import com.github.lizhanyin.tfs.client.framework.command.ExtendedStatus;
 import com.github.lizhanyin.tfs.client.framework.command.ICommand;
 import com.github.lizhanyin.tfs.client.framework.command.ICommandFinishedCallback;
 import com.github.lizhanyin.tfs.client.framework.command.helpers.CommandFinishedCallbackHelpers;
+import com.github.lizhanyin.tfs.client.ui.framework.UIContext;
 import com.github.lizhanyin.tfs.runtime.IStatus;
 import com.github.lizhanyin.tfs.runtime.Status;
 
@@ -17,6 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.Icon;
+import java.awt.Component;
 
 /**
  * <p>
@@ -37,17 +39,17 @@ import javax.swing.Icon;
  * @see ExtendedStatus
  */
 public class ErrorDialogCommandFinishedCallback implements ICommandFinishedCallback {
-    private final Project project;
+    private final UIContext uiContext;
 
     /**
      * Creates a new {@link ErrorDialogCommandFinishedCallback}. The specified
-     * {@link Project} is used as the context when showing the error dialog.
+     * {@link UIContext} is used as the context when showing the error dialog.
      *
-     * @param project
-     *        the {@link Project} (may be <code>null</code>)
+     * @param uiContext
+     *        the {@link UIContext} (may be <code>null</code>)
      */
-    public ErrorDialogCommandFinishedCallback(@Nullable final Project project) {
-        this.project = project;
+    public ErrorDialogCommandFinishedCallback(@Nullable final UIContext uiContext) {
+        this.uiContext = uiContext;
     }
 
     @Override
@@ -91,12 +93,33 @@ public class ErrorDialogCommandFinishedCallback implements ICommandFinishedCallb
 
             // Show dialog on EDT
             if (ApplicationManager.getApplication().isDispatchThread()) {
-                Messages.showMessageDialog(project, message, dialogTitle, dialogIcon);
+                showMessageDialog(message, dialogTitle, dialogIcon);
             } else {
                 ApplicationManager.getApplication().invokeLater(() -> {
-                    Messages.showMessageDialog(project, message, dialogTitle, dialogIcon);
+                    showMessageDialog(message, dialogTitle, dialogIcon);
                 });
             }
         }
+    }
+
+    private void showMessageDialog(final String message, final String title, final Icon icon) {
+        if (uiContext == null) {
+            Messages.showMessageDialog(message, title, icon);
+            return;
+        }
+
+        final Component parent = uiContext.getParentComponent();
+        if (parent != null) {
+            Messages.showMessageDialog(parent, message, title, icon);
+            return;
+        }
+
+        final Project project = uiContext.getProject();
+        if (project != null) {
+            Messages.showMessageDialog(project, message, title, icon);
+            return;
+        }
+
+        Messages.showMessageDialog(message, title, icon);
     }
 }

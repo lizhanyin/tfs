@@ -1,12 +1,17 @@
 package com.github.lizhanyin.tfs.wizard
 
 import com.github.lizhanyin.tfs.TfsBundle
+import com.github.lizhanyin.tfs.client.ui.framework.UIContext
+import java.net.URI
 
 /**
  * 导入项目向导上下文
  * 用于在向导步骤之间共享数据
  */
 class ImportProjectContext {
+
+    // UI 上下文（类似 SWT Shell）
+    var uiContext: UIContext = UIContext(null)
     // 服务器信息
     var serverUrl: String? = null
     var collectionName: String? = null
@@ -44,6 +49,8 @@ class ImportProjectContext {
      * 检查是否已选择团队项目
      */
     fun isTeamProjectSelected(): Boolean = !teamProject.isNullOrEmpty()
+
+    fun getServerUri(): URI = URI(serverUrl ?: "")
 
     /**
      * 认证类型枚举

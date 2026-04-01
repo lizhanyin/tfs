@@ -1,5 +1,10 @@
 package com.github.lizhanyin.tfs.services.impl;
 
+import com.github.lizhanyin.tfs.client.credentials.IdeaCredentialsManagerFactory;
+import com.github.lizhanyin.tfs.client.framework.command.ICommandExecutor;
+import com.github.lizhanyin.tfs.client.ui.framework.UIContext;
+import com.github.lizhanyin.tfs.client.ui.framework.command.UICommandFinishedCallbackFactory;
+import com.github.lizhanyin.tfs.client.ui.framework.command.WizardContainerCommandExecutor;
 import com.github.lizhanyin.tfs.client.ui.tasks.ConnectToConfigurationServerTask;
 import com.github.lizhanyin.tfs.runtime.IStatus;
 import com.github.lizhanyin.tfs.services.TfsConnectionService;
@@ -12,10 +17,16 @@ import com.microsoft.tfs.core.TFSTeamProjectCollection;
 import com.microsoft.tfs.core.clients.versioncontrol.VersionControlClient;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Item;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
+import com.microsoft.tfs.core.config.persistence.DefaultPersistenceStoreProvider;
+import com.microsoft.tfs.core.credentials.CachedCredentials;
+import com.microsoft.tfs.core.credentials.CredentialsManager;
+import com.microsoft.tfs.core.httpclient.CookieCredentials;
 import com.microsoft.tfs.core.httpclient.Credentials;
 import com.microsoft.tfs.core.httpclient.DefaultNTCredentials;
 import com.microsoft.tfs.core.httpclient.UsernamePasswordCredentials;
+import com.microsoft.tfs.core.util.ServerURIUtils;
 import com.microsoft.tfs.core.util.URIUtils;
+import com.microsoft.tfs.util.Platform;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,13 +62,89 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
         try {
             Credentials credentials = createCredentials(context);
             URI uri = URIUtils.newURI(context.getServerUrl());
-            final ConnectToConfigurationServerTask task = new ConnectToConfigurationServerTask(null, uri, credentials);
+            final ConnectToConfigurationServerTask task = new ConnectToConfigurationServerTask(
+                    context.getUiContext(), uri, credentials);
             IStatus status = task.run();
             return status.isOK();
         } catch (Exception e) {
             log.error("连接测试失败", e);
             return false;
         }
+    }
+
+    @Override
+    @NotNull
+    public TFSConnection getConnection(@NotNull ImportProjectContext context){
+        final URI serverURI = context.getServerUri();
+
+        return openAccount(context, serverURI, null);
+    }
+
+    private TFSConnection openAccount(final ImportProjectContext context, final URI accountUrl, final Credentials credentials) {
+
+        final Credentials accountCredentials = getAccountCredentials(accountUrl, credentials);
+
+        final ICommandExecutor noErrorDialogCommandExecutor = getCommandExecutor(context.getUiContext());
+        noErrorDialogCommandExecutor.setCommandFinishedCallback(
+                UICommandFinishedCallbackFactory.getDefaultNoErrorDialogCallback());
+
+        final ConnectToConfigurationServerTask connectTask =
+                new ConnectToConfigurationServerTask(context.getUiContext(), accountUrl, accountCredentials);
+        connectTask.setCommandExecutor(noErrorDialogCommandExecutor);
+        final IStatus status = connectTask.run();
+
+        final TFSConnection connection;
+        if (status.isOK()) {
+            connection = connectTask.getConnection();
+            updateCredentials(accountUrl, connection.getCredentials());
+        } else {
+            /* Connection cancelled */
+            connection = null;
+        }
+
+        return connection;
+    }
+
+    private Credentials getAccountCredentials(final URI accountUrl, final Credentials proposedCredentials) {
+        if (proposedCredentials == null) {
+            final CredentialsManager credentialsManager =
+                    IdeaCredentialsManagerFactory.getCredentialsManager(DefaultPersistenceStoreProvider.INSTANCE);
+            final CachedCredentials cachedCredentials = credentialsManager.getCredentials(accountUrl);
+
+            if (cachedCredentials != null) {
+                return cachedCredentials.toCredentials();
+            } else {
+                /*
+                 * For on-premises servers, simply use empty
+                 * UsernamePasswordCredentials (to force a username/password
+                 * dialog.) For hosted servers, use default NT credentials at
+                 * all (to avoid the username/password dialog.)
+                 */
+                return ServerURIUtils.isHosted(accountUrl) || Platform.isCurrentPlatform(Platform.WINDOWS)
+                        ? new DefaultNTCredentials() : new UsernamePasswordCredentials("", null); //$NON-NLS-1$
+            }
+        } else if (proposedCredentials instanceof CookieCredentials) {
+            return ((CookieCredentials) proposedCredentials).setDomain(accountUrl.getHost());
+        } else {
+            return proposedCredentials;
+        }
+    }
+
+    private void updateCredentials(final URI accountUrl, final Credentials credentials) {
+        final CredentialsManager credentialsManager =
+                IdeaCredentialsManagerFactory.getCredentialsManager(DefaultPersistenceStoreProvider.INSTANCE);
+
+        if (credentials != null && !(credentials instanceof DefaultNTCredentials)) {
+            log.debug("Save the new Cookie Credentials in the Eclipse secure storage for future sessions."); //$NON-NLS-1$
+            credentialsManager.setCredentials(new CachedCredentials(accountUrl, credentials));
+        } else {
+            credentialsManager.removeCredentials(accountUrl);
+        }
+    }
+
+
+    private ICommandExecutor getCommandExecutor(UIContext uiContext) {
+        return new WizardContainerCommandExecutor(uiContext);
     }
 
     // ==================== 获取团队项目 ====================
@@ -76,6 +163,7 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
 
     @Override
     @NotNull
+    @Deprecated
     public List<String> getTeamProjects(@NotNull TfsServerConfiguration.ServerConfig serverConfig) throws Exception {
         TFSTeamProjectCollection tpc = null;
         try {
@@ -102,6 +190,7 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
 
     @Override
     @NotNull
+    @Deprecated
     public List<ProjectItemInfo> getProjectItems(@NotNull TfsServerConfiguration.ServerConfig serverConfig, @NotNull String teamProject) throws Exception {
         TFSTeamProjectCollection tpc = null;
         try {
@@ -128,6 +217,7 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
 
     @Override
     @NotNull
+    @Deprecated
     public List<ProjectItemInfo> getChildItems(@NotNull TfsServerConfiguration.ServerConfig serverConfig, @NotNull String parentPath) throws Exception {
         TFSTeamProjectCollection tpc = null;
         try {
@@ -204,6 +294,7 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
     /**
      * 从存储的配置智能连接到 TFS 服务器
      */
+    @Deprecated
     private @NotNull TFSTeamProjectCollection smartConnectFromConfig(@NotNull TfsServerConfiguration.ServerConfig serverConfig) throws Exception {
         Credentials credentials = createCredentialsFromConfig(serverConfig);
         List<String> urlsToTry = getUrlsFromConfig(serverConfig);
@@ -260,6 +351,7 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
         return urlsToTry;
     }
 
+    @Deprecated
     private static @NotNull List<String> getUrlsFromConfig(@NotNull TfsServerConfiguration.ServerConfig serverConfig) {
         String serverUrl = serverConfig.getUrl();
 
@@ -318,6 +410,7 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
         }
     }
 
+    @Deprecated
     private static Credentials createCredentialsFromConfig(@NotNull TfsServerConfiguration.ServerConfig serverConfig) {
         final String authType = serverConfig.getAuthType();
         final String username = serverConfig.getUsername();

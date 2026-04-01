@@ -2,6 +2,7 @@ package com.github.lizhanyin.tfs.services;
 
 import com.github.lizhanyin.tfs.settings.TfsServerConfiguration;
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext;
+import com.microsoft.tfs.core.TFSConnection;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -26,6 +27,13 @@ public interface TfsConnectionService {
     boolean testConnection(@NotNull ImportProjectContext context);
 
     /**
+     * 获取 TFS 服务器的连接
+     * @param context 导入项目上下文
+     * @return conn
+     */
+    TFSConnection getConnection(@NotNull ImportProjectContext context);
+
+    /**
      * 获取团队项目列表
      *
      * @param context 导入项目上下文
@@ -43,6 +51,7 @@ public interface TfsConnectionService {
      * @throws Exception 如果连接或查询失败
      */
     @NotNull
+    @Deprecated
     List<String> getTeamProjects(@NotNull TfsServerConfiguration.ServerConfig serverConfig) throws Exception;
 
     /**
@@ -65,6 +74,7 @@ public interface TfsConnectionService {
      * @throws Exception 如果连接或查询失败
      */
     @NotNull
+    @Deprecated
     List<ProjectItemInfo> getProjectItems(@NotNull TfsServerConfiguration.ServerConfig serverConfig, @NotNull String teamProject) throws Exception;
 
     /**
@@ -87,6 +97,7 @@ public interface TfsConnectionService {
      * @throws Exception 如果连接或查询失败
      */
     @NotNull
+    @Deprecated
     List<ProjectItemInfo> getChildItems(@NotNull TfsServerConfiguration.ServerConfig serverConfig, @NotNull String parentPath) throws Exception;
 
     /**

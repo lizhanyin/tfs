@@ -6,6 +6,7 @@ package com.github.lizhanyin.tfs.client.ui.framework.command;
 import com.github.lizhanyin.tfs.client.framework.command.ICommandExecutor;
 import com.github.lizhanyin.tfs.client.framework.command.JobOptions;
 import com.github.lizhanyin.tfs.client.framework.command.ThreadCommandExecutor;
+import com.github.lizhanyin.tfs.client.ui.framework.UIContext;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
@@ -64,8 +65,8 @@ public class UICommandExecutorFactory {
      * executor.
      * </p>
      *
-     * @param project
-     *        the IntelliJ {@link Project} (must not be <code>null</code>)
+     * @param uiContext
+     *        the {@link UIContext} (must not be <code>null</code>)
      * @param jobOptions
      *        a {@link JobOptions} instance containing values used to configure
      *        new {@link Task.Backgroundable}s, or <code>null</code> to use default
@@ -73,9 +74,9 @@ public class UICommandExecutorFactory {
      * @return a new {@link ICommandExecutor} as described above
      */
     public static ICommandExecutor newUIJobCommandExecutor(
-            @NotNull final Project project,
+            @NotNull final UIContext uiContext,
             @Nullable final JobOptions jobOptions) {
-        return new UIJobCommandExecutor(project, jobOptions);
+        return new UIJobCommandExecutor(uiContext, jobOptions);
     }
 
     /**

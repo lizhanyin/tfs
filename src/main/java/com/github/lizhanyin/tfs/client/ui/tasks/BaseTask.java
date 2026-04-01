@@ -4,6 +4,7 @@
 package com.github.lizhanyin.tfs.client.ui.tasks;
 
 import com.github.lizhanyin.tfs.client.ui.Task;
+import com.github.lizhanyin.tfs.client.ui.framework.UIContext;
 import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.Nullable;
 
@@ -12,15 +13,15 @@ import com.github.lizhanyin.tfs.client.framework.command.ICommandExecutor;
 import com.github.lizhanyin.tfs.client.ui.framework.command.UICommandExecutorFactory;
 
 public abstract class BaseTask implements Task {
-    private final Project project;
+    private final UIContext uiContext;
 
     private ICommandExecutor commandExecutor;
 
-    public BaseTask(@Nullable final Project project) {
-        this.project = project;
+    public BaseTask(@Nullable final UIContext uiContext) {
+        this.uiContext = uiContext != null ? uiContext : new UIContext(null);
 
-        if (project != null) {
-            commandExecutor = UICommandExecutorFactory.newUIJobCommandExecutor(project);
+        if (uiContext != null && uiContext.getProject() != null) {
+            commandExecutor = UICommandExecutorFactory.newUIJobCommandExecutor(uiContext.getProject());
         } else {
             // Fallback to synchronous executor when no project is available
             // (e.g. during server configuration in the import wizard)
@@ -30,7 +31,12 @@ public abstract class BaseTask implements Task {
 
     @Nullable
     protected Project getProject() {
-        return project;
+        return uiContext.getProject();
+    }
+
+    @Nullable
+    protected UIContext getUIContext() {
+        return uiContext;
     }
 
     @Override

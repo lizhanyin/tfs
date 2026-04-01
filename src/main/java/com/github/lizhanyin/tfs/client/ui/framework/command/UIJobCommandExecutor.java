@@ -4,6 +4,7 @@
 package com.github.lizhanyin.tfs.client.ui.framework.command;
 
 import com.github.lizhanyin.tfs.client.framework.command.*;
+import com.github.lizhanyin.tfs.client.ui.framework.UIContext;
 import com.microsoft.tfs.util.Check;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -34,15 +35,22 @@ import com.github.lizhanyin.tfs.runtime.Status;
  * </p>
  */
 public class UIJobCommandExecutor extends JobCommandExecutor {
+    private final UIContext uiContext;
+
     public UIJobCommandExecutor(@NotNull final Project project) {
-        this(project, null);
+        this(UIContext.from(project), null);
     }
 
     public UIJobCommandExecutor(@NotNull final Project project, @Nullable final JobOptions jobOptions) {
+        this(UIContext.from(project), jobOptions);
+    }
+
+    public UIJobCommandExecutor(@NotNull final UIContext uiContext, @Nullable final JobOptions jobOptions) {
         super(createJobOptions(jobOptions));
 
-        Check.notNull(project, "project"); //$NON-NLS-1$
-        setCommandFinishedCallback(UICommandFinishedCallbackFactory.getDefaultCallback(project));
+        Check.notNull(uiContext, "uiContext"); //$NON-NLS-1$
+        this.uiContext = uiContext;
+        setCommandFinishedCallback(UICommandFinishedCallbackFactory.getDefaultCallback(uiContext));
     }
 
     private static JobOptions createJobOptions(@Nullable final JobOptions jobOptions) {
