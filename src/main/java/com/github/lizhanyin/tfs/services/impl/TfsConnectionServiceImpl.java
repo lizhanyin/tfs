@@ -1,47 +1,32 @@
 package com.github.lizhanyin.tfs.services.impl;
 
 import com.github.lizhanyin.tfs.client.catalog.CrossCollectionProjectInfo;
-import com.github.lizhanyin.tfs.client.catalog.TeamProjectCollectionInfo;
-import com.github.lizhanyin.tfs.client.commands.QueryProjectCollectionsCommand;
-import com.github.lizhanyin.tfs.client.commands.QueryTeamProjectsCommand;
-import com.github.lizhanyin.tfs.client.credentials.IdeaCredentialsManagerFactory;
-import com.github.lizhanyin.tfs.client.framework.command.CommandExecutor;
-import com.github.lizhanyin.tfs.client.framework.command.ICommandExecutor;
-import com.github.lizhanyin.tfs.client.framework.command.ThreadedCancellableCommand;
-import com.github.lizhanyin.tfs.client.ui.framework.UIContext;
-import com.github.lizhanyin.tfs.client.ui.framework.command.UICommandFinishedCallbackFactory;
-import com.github.lizhanyin.tfs.client.ui.framework.command.WizardContainerCommandExecutor;
 import com.github.lizhanyin.tfs.client.ui.tasks.ConnectToConfigurationServerTask;
+import com.github.lizhanyin.tfs.client.ui.wizard.WizardCollectionSelectionPage;
+import com.github.lizhanyin.tfs.client.ui.wizard.WizardServerSelectionPage;
+import com.github.lizhanyin.tfs.client.ui.wizard.WizardWorkspacePage;
 import com.github.lizhanyin.tfs.runtime.IStatus;
 import com.github.lizhanyin.tfs.services.TfsConnectionService;
 import com.github.lizhanyin.tfs.settings.TfsServerConfiguration;
 import com.github.lizhanyin.tfs.startup.TfsNativeLibraryInitializer;
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext;
 import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.openapi.progress.ProgressIndicator;
-import com.intellij.openapi.progress.ProgressManager;
-import com.microsoft.tfs.core.TFSConfigurationServer;
 import com.microsoft.tfs.core.TFSConnection;
 import com.microsoft.tfs.core.TFSTeamProjectCollection;
-import com.microsoft.tfs.core.clients.commonstructure.ProjectInfo;
 import com.microsoft.tfs.core.clients.versioncontrol.VersionControlClient;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Item;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
-import com.microsoft.tfs.core.config.persistence.DefaultPersistenceStoreProvider;
-import com.microsoft.tfs.core.credentials.CachedCredentials;
-import com.microsoft.tfs.core.credentials.CredentialsManager;
-import com.microsoft.tfs.core.httpclient.CookieCredentials;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
 import com.microsoft.tfs.core.httpclient.Credentials;
 import com.microsoft.tfs.core.httpclient.DefaultNTCredentials;
 import com.microsoft.tfs.core.httpclient.UsernamePasswordCredentials;
-import com.microsoft.tfs.core.util.ServerURIUtils;
 import com.microsoft.tfs.core.util.URIUtils;
-import com.microsoft.tfs.util.Platform;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -82,173 +67,29 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
         }
     }
 
+    // ==================== 获取连接 ====================
+
     @Override
     @NotNull
     public TFSConnection getConnection(@NotNull ImportProjectContext context){
-        final URI serverURI = context.getServerUri();
-
-        return openAccount(context, serverURI, null);
-    }
-
-    private TFSConnection openAccount(final ImportProjectContext context, final URI accountUrl, final Credentials credentials) {
-
-        final Credentials accountCredentials = getAccountCredentials(accountUrl, credentials);
-
-        final ICommandExecutor noErrorDialogCommandExecutor = getCommandExecutor(context.getUiContext());
-        noErrorDialogCommandExecutor.setCommandFinishedCallback(
-                UICommandFinishedCallbackFactory.getDefaultNoErrorDialogCallback());
-
-        final ConnectToConfigurationServerTask connectTask =
-                new ConnectToConfigurationServerTask(context.getUiContext(), accountUrl, accountCredentials);
-        connectTask.setCommandExecutor(noErrorDialogCommandExecutor);
-        final IStatus status = connectTask.run();
-
-        final TFSConnection connection;
-        if (status.isOK()) {
-            connection = connectTask.getConnection();
-            updateCredentials(accountUrl, connection.getCredentials());
-        } else {
-            /* Connection cancelled */
-            connection = null;
-        }
-
-        return connection;
-    }
-
-    private Credentials getAccountCredentials(final URI accountUrl, final Credentials proposedCredentials) {
-        if (proposedCredentials == null) {
-            final CredentialsManager credentialsManager =
-                    IdeaCredentialsManagerFactory.getCredentialsManager(DefaultPersistenceStoreProvider.INSTANCE);
-            final CachedCredentials cachedCredentials = credentialsManager.getCredentials(accountUrl);
-
-            if (cachedCredentials != null) {
-                return cachedCredentials.toCredentials();
-            } else {
-                /*
-                 * For on-premises servers, simply use empty
-                 * UsernamePasswordCredentials (to force a username/password
-                 * dialog.) For hosted servers, use default NT credentials at
-                 * all (to avoid the username/password dialog.)
-                 */
-                return ServerURIUtils.isHosted(accountUrl) || Platform.isCurrentPlatform(Platform.WINDOWS)
-                        ? new DefaultNTCredentials() : new UsernamePasswordCredentials("", null); //$NON-NLS-1$
-            }
-        } else if (proposedCredentials instanceof CookieCredentials) {
-            return ((CookieCredentials) proposedCredentials).setDomain(accountUrl.getHost());
-        } else {
-            return proposedCredentials;
-        }
-    }
-
-    private void updateCredentials(final URI accountUrl, final Credentials credentials) {
-        final CredentialsManager credentialsManager =
-                IdeaCredentialsManagerFactory.getCredentialsManager(DefaultPersistenceStoreProvider.INSTANCE);
-
-        // PasswordSafe.setPassword() 是慢操作，不允许在 EDT 上执行
-        com.intellij.openapi.application.ApplicationManager.getApplication().executeOnPooledThread(() -> {
-            try {
-                if (credentials != null && !(credentials instanceof DefaultNTCredentials)) {
-                    log.debug("Save the new Cookie Credentials in the Eclipse secure storage for future sessions."); //$NON-NLS-1$
-                    credentialsManager.setCredentials(new CachedCredentials(accountUrl, credentials));
-                } else {
-                    credentialsManager.removeCredentials(accountUrl);
-                }
-            } catch (final Exception e) {
-                log.error("Error writing credentials to the IntelliJ IDEA secure store", e); //$NON-NLS-1$
-            }
-        });
-    }
-
-
-    private ICommandExecutor getCommandExecutor(UIContext uiContext) {
-        // 优先使用 UIContext 中携带的 ProgressIndicator
-        if (uiContext.getProgressIndicator() != null) {
-            return new WizardContainerCommandExecutor(uiContext);
-        }
-
-        // 尝试获取当前线程的 ProgressIndicator（在 Task.Modal/Backgroundable 内）
-        final ProgressIndicator currentIndicator = ProgressManager.getInstance().getProgressIndicator();
-        if (currentIndicator != null) {
-            return new WizardContainerCommandExecutor(UIContext.of(
-                    uiContext.getProject(), uiContext.getParentComponent(), currentIndicator));
-        }
-
-        // 无 ProgressIndicator 时使用不需要进度的执行器
-        return new CommandExecutor();
+        return new WizardServerSelectionPage(context).openAccount();
     }
 
     // ==================== 获取团队项目 ====================
 
     @Override
     public @NotNull List<CrossCollectionProjectInfo> getTeamProjects(@NotNull ImportProjectContext context) throws Exception {
-        List<CrossCollectionProjectInfo> projects = new ArrayList<>(100);
-
-        TFSConnection connection = context.getTfsConn();
-
-        TFSConfigurationServer configurationServer = null;
-        if (connection instanceof TFSConfigurationServer) {
-            configurationServer = (TFSConfigurationServer) connection;
-        } else if (connection instanceof TFSTeamProjectCollection) {
-            configurationServer = ((TFSTeamProjectCollection) connection).getConfigurationServer();
-        }
-
-        if (configurationServer == null) {
-            log.error(new IllegalArgumentException("Unexpected connection type: " + connection.getClass().getName())); //$NON-NLS-1$
-            return projects;
-        }
-
-        final List<TFSTeamProjectCollection> collections = new ArrayList<>(5);
-        final QueryProjectCollectionsCommand queryCommand = new QueryProjectCollectionsCommand(configurationServer);
-
-        final IStatus status = getCommandExecutor(context.getUiContext()).execute(new ThreadedCancellableCommand(queryCommand));
-        if (!status.isOK()) {
-            return projects;
-        }
-
-        final TeamProjectCollectionInfo[] projectCollections = queryCommand.getProjectCollections();
-        for (final TeamProjectCollectionInfo collectionInfo : projectCollections) {
-            try {
-                collections.add(
-                        configurationServer.getTeamProjectCollection(collectionInfo.getIdentifier()));
-            } catch (final Exception e) {
-                log.warn("Failed to get Team Project Collection: " + collectionInfo.getDisplayName()); //$NON-NLS-1$
-                log.warn(e);
-            }
-        }
-
-        // For each collection get the list of projects
-        for (final TFSTeamProjectCollection collection : collections) {
-            final QueryTeamProjectsCommand queryCommand2 = new QueryTeamProjectsCommand(collection);
-            final IStatus status2 = getCommandExecutor(context.getUiContext()).execute(new ThreadedCancellableCommand(queryCommand2));
-            if (!status2.isOK()) {
-                continue;
-            }
-            final ProjectInfo[] projectInfos = queryCommand2.getProjects();
-            for (final ProjectInfo info : projectInfos) {
-                final CrossCollectionProjectInfo pi = new CrossCollectionProjectInfo(
-                        collection,
-                        info.getName(),
-                        info.getURI(),
-                        collection.getName(),
-                        collection.getBaseURI().getHost());
-                projects.add(pi);
-            }
-        }
-        return projects;
+        return new WizardCollectionSelectionPage(context).queryTeamProjects();
     }
 
-    // ==================== 获取项目项 ====================
+
+    // ==================== 获取工作区列表 ====================
 
     @Override
     @NotNull
-    public List<ProjectItemInfo> getProjectItems(@NotNull ImportProjectContext context, @NotNull String teamProject) throws Exception {
-        TFSTeamProjectCollection tpc = null;
-        try {
-            tpc = smartConnect(context);
-            return doGetProjectItems(tpc, teamProject);
-        } finally {
-            closeConnection(tpc);
-        }
+    public List<Workspace> getWorkspaces(@NotNull ImportProjectContext context) throws Exception {
+        Workspace[] workspaces = new WizardWorkspacePage(context).queryWorkspace(false);
+        return Arrays.asList(workspaces);
     }
 
     // ==================== 获取子项目 ====================
@@ -263,68 +104,6 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
         } finally {
             closeConnection(tpc);
         }
-    }
-
-    // ==================== 获取工作区列表 ====================
-
-    @Override
-    @NotNull
-    public List<WorkspaceInfo> getWorkspaces(@NotNull ImportProjectContext context) throws Exception {
-        TFSTeamProjectCollection tpc = null;
-        try {
-            tpc = smartConnect(context);
-            VersionControlClient vcClient = tpc.getVersionControlClient();
-
-            com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace[] workspaces =
-                    vcClient.getRepositoryWorkspaces(null, null, null);
-
-            List<WorkspaceInfo> result = new ArrayList<>();
-            if (workspaces != null) {
-                for (com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace ws : workspaces) {
-                    result.add(new WorkspaceInfo(
-                            ws.getName(),
-                            ws.getComputer(),
-                            ws.getOwnerDisplayName(),
-                            ws.getComment() != null ? ws.getComment() : ""
-                    ));
-                }
-            }
-            return result;
-        } finally {
-            closeConnection(tpc);
-        }
-    }
-
-    // ==================== 私有辅助方法 ====================
-
-    private List<String> getTeamProjectNames(TFSTeamProjectCollection tpc) {
-        List<String> projects = new ArrayList<>();
-        for (com.microsoft.tfs.core.clients.workitem.project.Project project : tpc.getWorkItemClient().getProjects()) {
-            projects.add(project.getName());
-        }
-        return projects;
-    }
-
-    private List<ProjectItemInfo> doGetProjectItems(TFSTeamProjectCollection tpc, String teamProject) {
-        VersionControlClient vcClient = tpc.getVersionControlClient();
-        List<ProjectItemInfo> items = new ArrayList<>();
-
-        String serverPath = "$/" + teamProject;
-        Item[] tfsItems = vcClient.getItems(serverPath, RecursionType.ONE_LEVEL).getItems();
-
-        if (tfsItems != null) {
-            for (Item item : tfsItems) {
-                if (!item.getServerItem().equals(serverPath)) {
-                    items.add(new ProjectItemInfo(
-                            item.getServerItem(),
-                            item.getItemType() == com.microsoft.tfs.core.clients.versioncontrol.soapextensions.ItemType.FOLDER
-                                    ? ItemType.FOLDER : ItemType.FILE
-                    ));
-                }
-            }
-        }
-
-        return items;
     }
 
     private List<ProjectItemInfo> doGetChildItems(TFSTeamProjectCollection tpc, String parentPath) {

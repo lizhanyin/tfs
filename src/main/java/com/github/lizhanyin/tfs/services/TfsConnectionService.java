@@ -3,6 +3,7 @@ package com.github.lizhanyin.tfs.services;
 import com.github.lizhanyin.tfs.client.catalog.CrossCollectionProjectInfo;
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext;
 import com.microsoft.tfs.core.TFSConnection;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -34,6 +35,16 @@ public interface TfsConnectionService {
     TFSConnection getConnection(@NotNull ImportProjectContext context);
 
     /**
+     * 获取工作区列表
+     *
+     * @param context 导入项目上下文
+     * @return 工作区信息列表
+     * @throws Exception 如果连接或查询失败
+     */
+    @NotNull
+    List<Workspace> getWorkspaces(@NotNull ImportProjectContext context) throws Exception;
+
+    /**
      * 获取团队项目列表
      *
      * @param context 导入项目上下文
@@ -41,17 +52,6 @@ public interface TfsConnectionService {
      * @throws Exception 如果连接或查询失败
      */
     @NotNull List<CrossCollectionProjectInfo> getTeamProjects(@NotNull ImportProjectContext context) throws Exception;
-
-    /**
-     * 获取服务器项目结构（文件夹和文件）
-     *
-     * @param context     导入项目上下文
-     * @param teamProject 团队项目名称
-     * @return 项目项列表
-     * @throws Exception 如果连接或查询失败
-     */
-    @NotNull
-    List<ProjectItemInfo> getProjectItems(@NotNull ImportProjectContext context, @NotNull String teamProject) throws Exception;
 
     /**
      * 获取子项目
@@ -63,16 +63,6 @@ public interface TfsConnectionService {
      */
     @NotNull
     List<ProjectItemInfo> getChildItems(@NotNull ImportProjectContext context, @NotNull String parentPath) throws Exception;
-
-    /**
-     * 获取工作区列表
-     *
-     * @param context 导入项目上下文
-     * @return 工作区信息列表
-     * @throws Exception 如果连接或查询失败
-     */
-    @NotNull
-    List<WorkspaceInfo> getWorkspaces(@NotNull ImportProjectContext context) throws Exception;
 
     /**
      * 项目项信息
