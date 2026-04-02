@@ -7,6 +7,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.intellij.util.SlowOperations;
 import com.microsoft.tfs.core.util.URIUtils;
 import org.jetbrains.annotations.NotNull;
 

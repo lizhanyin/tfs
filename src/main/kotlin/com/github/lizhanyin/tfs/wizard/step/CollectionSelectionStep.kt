@@ -13,6 +13,7 @@ import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
+import com.intellij.util.ui.FormBuilder
 import com.intellij.util.ui.JBUI
 import com.microsoft.tfs.core.util.ServerURIUtils
 import java.awt.BorderLayout
@@ -66,17 +67,30 @@ class CollectionSelectionStep(context: ImportProjectContext) :
     private val allProjects = mutableListOf<CrossCollectionProjectInfo>()
 
     override fun buildComponent(): JComponent {
-        val panel = JPanel(BorderLayout(0, JBUI.scale(8)))
-        panel.border = JBUI.Borders.empty(10)
+
+        // 标题区域（FormBuilder）
+        val builder = FormBuilder.createFormBuilder()
+        builder.addComponent(JLabel(TfsBundle.message("ServerSelectionStep.description")))
+        builder.addSeparator()
+        val formPanel = builder.panel
+
+        // 内容区域（BorderLayout，可自动填充）
+        val contentPanel = JPanel(BorderLayout(0, JBUI.scale(8)))
+        contentPanel.border = JBUI.Borders.empty(10)
 
         // 顶部：筛选输入框
-        panel.add(createFilterPanel(), BorderLayout.NORTH)
+        contentPanel.add(createFilterPanel(), BorderLayout.NORTH)
 
         // 中间：项目表格
-        panel.add(createTablePanel(), BorderLayout.CENTER)
+        contentPanel.add(createTablePanel(), BorderLayout.CENTER)
 
         // 底部：服务器信息 + 提示
-        panel.add(createBottomPanel(), BorderLayout.SOUTH)
+        contentPanel.add(createBottomPanel(), BorderLayout.SOUTH)
+
+        // 整体：标题在顶部，内容填充剩余空间
+        val panel = JPanel(BorderLayout())
+        panel.add(formPanel, BorderLayout.NORTH)
+        panel.add(contentPanel, BorderLayout.CENTER)
 
         // 自动加载团队项目
         loadTeamProjects()

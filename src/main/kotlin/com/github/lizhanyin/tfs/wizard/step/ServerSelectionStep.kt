@@ -2,11 +2,9 @@ package com.github.lizhanyin.tfs.wizard.step
 
 import com.github.lizhanyin.tfs.TfsBundle
 import com.github.lizhanyin.tfs.client.ui.framework.UIContext
-import com.github.lizhanyin.tfs.services.TfsConnectionService
 import com.github.lizhanyin.tfs.settings.TfsServerConfiguration
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext
 import com.github.lizhanyin.tfs.wizard.dialog.ManageServersDialog
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.CollectionComboBoxModel
 import com.intellij.ui.JBColor
@@ -182,11 +180,6 @@ class ServerSelectionStep(context: ImportProjectContext) :
             context.username = selected.username
             context.password = selected.password
             context.domain = selected.domain
-
-            val connectionService = ApplicationManager.getApplication()
-                .getService(TfsConnectionService::class.java)
-
-            context.tfsConn = connectionService.getConnection(context)
         }
         return true
     }

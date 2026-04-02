@@ -2,16 +2,20 @@ package com.github.lizhanyin.tfs.wizard
 
 import com.github.lizhanyin.tfs.TfsBundle
 import com.github.lizhanyin.tfs.client.ui.framework.UIContext
+import com.github.lizhanyin.tfs.services.TfsConnectionService
 import com.github.lizhanyin.tfs.wizard.step.ProjectSelectionStep
 import com.github.lizhanyin.tfs.wizard.step.ServerSelectionStep
 import com.github.lizhanyin.tfs.wizard.step.CollectionSelectionStep
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
+import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBUI
 import org.jetbrains.annotations.Nullable
 import java.awt.BorderLayout
+import java.awt.Color
 import java.awt.Dimension
 import java.awt.FlowLayout
 import java.awt.Font
@@ -54,6 +58,7 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
     @Volatile
     private var importCancelled = false
     private var importThread: Thread? = null
+    private var connectionThread: Thread? = null
 
     init {
         setTitle(TfsBundle.message(TITLE))
@@ -97,11 +102,22 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
                 preferredSize = Dimension(200, preferredSize.height)
                 progressBar = this
             }, BorderLayout.CENTER)
-            add(JButton(TfsBundle.message("ImportProjectWizard.progress.cancel")).apply {
-                cancelImportButton = this
-                addActionListener { cancelImport() }
-            }, BorderLayout.EAST)
-            isVisible = false
+            add(object : JButton() {
+                init {
+                    preferredSize = Dimension(8, 8)
+                    isBorderPainted = false
+                    isFocusPainted = false
+                    isContentAreaFilled = false
+                    toolTipText = TfsBundle.message("ImportProjectWizard.progress.cancel")
+                    addActionListener { cancelImport() }
+                }
+
+                override fun paintComponent(g: java.awt.Graphics) {
+                    g.color = JBColor(Color(205, 55, 55), Color(160, 40, 40))
+                    g.fillRect(0, 0, width, height)
+                }
+            }.also { cancelImportButton = it }, BorderLayout.EAST)
+            isVisible = true
         }
         southPanel.add(progressPanel, BorderLayout.WEST)
 
@@ -203,6 +219,43 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
             return
         }
 
+        // 服务器选择步骤：异步连接并显示进度
+        if (currentStep is ServerSelectionStep) {
+            showConnectingProgress()
+            importCancelled = false
+
+            val ctx = context
+            connectionThread = Thread({
+                try {
+                    val connectionService = ApplicationManager.getApplication()
+                        .getService(TfsConnectionService::class.java)
+                    ctx.tfsConn = connectionService.getConnection(ctx)
+
+                    if (importCancelled) {
+                        SwingUtilities.invokeLater { hideConnectingProgress() }
+                        return@Thread
+                    }
+
+                    SwingUtilities.invokeLater {
+                        hideConnectingProgress()
+                        currentStepIndex++
+                        updateStepContent()
+                    }
+                } catch (e: Exception) {
+                    SwingUtilities.invokeLater {
+                        hideConnectingProgress()
+                        Messages.showErrorDialog(
+                            contentPanel,
+                            "连接服务器失败: ${e.message}",
+                            "连接失败"
+                        )
+                    }
+                }
+            }, "TFS-Connect")
+            connectionThread!!.start()
+            return
+        }
+
         if (currentStepIndex < steps.size - 1) {
             currentStepIndex++
             updateStepContent()
@@ -296,14 +349,29 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
         setOKActionEnabled(!importing && currentStepIndex == steps.size - 1)
 
         if (importing) {
+            progressLabel.text = TfsBundle.message("ImportProjectWizard.progress.importingFromTfs")
             progressBar.isIndeterminate = true
         }
+    }
+
+    private fun showConnectingProgress() {
+        progressLabel.text = "连接服务器中..."
+        progressPanel.isVisible = true
+        previousButton.isEnabled = false
+        nextButton.isEnabled = false
+        setOKActionEnabled(false)
+        progressBar.isIndeterminate = true
+    }
+
+    private fun hideConnectingProgress() {
+        progressPanel.isVisible = false
+        updateButtonState()
     }
 
     override fun getDimensionServiceKey(): String = "TfsImportProjectWizard"
 
     override fun doCancelAction() {
-        if (importThread?.isAlive == true) {
+        if (importThread?.isAlive == true || connectionThread?.isAlive == true) {
             cancelImport()
         }
         super.doCancelAction()
