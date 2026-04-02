@@ -265,6 +265,36 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
         }
     }
 
+    // ==================== 获取工作区列表 ====================
+
+    @Override
+    @NotNull
+    public List<WorkspaceInfo> getWorkspaces(@NotNull ImportProjectContext context) throws Exception {
+        TFSTeamProjectCollection tpc = null;
+        try {
+            tpc = smartConnect(context);
+            VersionControlClient vcClient = tpc.getVersionControlClient();
+
+            com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace[] workspaces =
+                    vcClient.getRepositoryWorkspaces(null, null, null);
+
+            List<WorkspaceInfo> result = new ArrayList<>();
+            if (workspaces != null) {
+                for (com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace ws : workspaces) {
+                    result.add(new WorkspaceInfo(
+                            ws.getName(),
+                            ws.getComputer(),
+                            ws.getOwnerDisplayName(),
+                            ws.getComment() != null ? ws.getComment() : ""
+                    ));
+                }
+            }
+            return result;
+        } finally {
+            closeConnection(tpc);
+        }
+    }
+
     // ==================== 私有辅助方法 ====================
 
     private List<String> getTeamProjectNames(TFSTeamProjectCollection tpc) {

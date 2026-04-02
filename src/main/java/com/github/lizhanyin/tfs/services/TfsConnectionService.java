@@ -65,6 +65,16 @@ public interface TfsConnectionService {
     List<ProjectItemInfo> getChildItems(@NotNull ImportProjectContext context, @NotNull String parentPath) throws Exception;
 
     /**
+     * 获取工作区列表
+     *
+     * @param context 导入项目上下文
+     * @return 工作区信息列表
+     * @throws Exception 如果连接或查询失败
+     */
+    @NotNull
+    List<WorkspaceInfo> getWorkspaces(@NotNull ImportProjectContext context) throws Exception;
+
+    /**
      * 项目项信息
      */
     class ProjectItemInfo {
@@ -101,5 +111,27 @@ public interface TfsConnectionService {
     enum ItemType {
         FILE,
         FOLDER
+    }
+
+    /**
+     * 工作区信息
+     */
+    class WorkspaceInfo {
+        private final String name;
+        private final String computer;
+        private final String owner;
+        private final String comment;
+
+        public WorkspaceInfo(String name, String computer, String owner, String comment) {
+            this.name = name;
+            this.computer = computer;
+            this.owner = owner;
+            this.comment = comment;
+        }
+
+        public String getName() { return name; }
+        public String getComputer() { return computer; }
+        public String getOwner() { return owner; }
+        public String getComment() { return comment; }
     }
 }

@@ -347,7 +347,7 @@ class AddServerDialog(
                 finishTesting()
                 if (success) {
                     statusLabel.text = TfsBundle.message("AddServerDialog.status.success")
-                    statusLabel.foreground = Color(0, 128, 0)
+                    statusLabel.foreground = JBColor(Color(0, 128, 0), Color(0, 128, 0))
                     connectionTested = true
                 } else {
                     statusLabel.text = TfsBundle.message("AddServerDialog.status.failed")

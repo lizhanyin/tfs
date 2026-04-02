@@ -25,6 +25,9 @@ class ImportProjectContext {
     // 团队项目
     var collection: CrossCollectionProjectInfo? = null
 
+    // 选中的工作区
+    var workspaceName: String? = null
+
     // 选中的项目/分支
     val selectedProjects: MutableList<String> = mutableListOf()
 

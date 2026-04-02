@@ -6,6 +6,7 @@ import com.github.lizhanyin.tfs.services.TfsConnectionService
 import com.github.lizhanyin.tfs.wizard.step.ProjectSelectionStep
 import com.github.lizhanyin.tfs.wizard.step.ServerSelectionStep
 import com.github.lizhanyin.tfs.wizard.step.CollectionSelectionStep
+import com.github.lizhanyin.tfs.wizard.step.WorkspaceSelectionStep
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
@@ -36,6 +37,7 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
     private val steps = listOf(
         ServerSelectionStep(context),
         CollectionSelectionStep(context),
+        WorkspaceSelectionStep(context),
         ProjectSelectionStep(context)
     )
     private var currentStepIndex = 0
@@ -65,6 +67,7 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
         setOKButtonText(TfsBundle.message("ImportProjectWizard.button.import"))
         init()
         // window 在 init() 之后才可用
+        window?.minimumSize = Dimension(1024, 768)
         context.uiContext = UIContext.of(project, window)
     }
 
@@ -104,7 +107,7 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
             }, BorderLayout.CENTER)
             add(object : JButton() {
                 init {
-                    preferredSize = Dimension(8, 8)
+                    preferredSize = Dimension(18, 8)
                     isBorderPainted = false
                     isFocusPainted = false
                     isContentAreaFilled = false
@@ -114,10 +117,10 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
 
                 override fun paintComponent(g: java.awt.Graphics) {
                     g.color = JBColor(Color(205, 55, 55), Color(160, 40, 40))
-                    g.fillRect(0, 0, width, height)
+                    g.fillRect(4, 12, 12, 12)
                 }
             }.also { cancelImportButton = it }, BorderLayout.EAST)
-            isVisible = true
+            isVisible = false
         }
         southPanel.add(progressPanel, BorderLayout.WEST)
 
