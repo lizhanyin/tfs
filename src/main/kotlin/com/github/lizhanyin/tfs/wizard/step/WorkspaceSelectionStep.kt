@@ -1,0 +1,273 @@
+package com.github.lizhanyin.tfs.wizard.step
+
+import com.github.lizhanyin.tfs.TfsBundle
+import com.github.lizhanyin.tfs.services.TfsConnectionService
+import com.github.lizhanyin.tfs.wizard.ImportProjectContext
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.ui.Messages
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.progress.Task
+import com.intellij.ui.JBColor
+import com.intellij.ui.components.JBLabel
+import com.intellij.ui.components.JBScrollPane
+import com.intellij.ui.table.JBTable
+import com.intellij.util.ui.FormBuilder
+import com.intellij.util.ui.JBUI
+import java.awt.BorderLayout
+import java.awt.Component
+import java.awt.Dimension
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
+import javax.swing.*
+import javax.swing.table.AbstractTableModel
+import javax.swing.table.DefaultTableCellRenderer
+
+
+/**
+ * 工作区选择步骤（第三步）
+ *
+ * UI 布局（参考 CLAUDE.md）：
+ * ------------------------------------------
+ * |  TFS 工作区                              |
+ * |    选择要从中导入项目的 TFS 工作区           |
+ * |----------------------------------------|
+ * |  [tip ] 工作区说明文字                      |
+ * |  [table: 名称|计算机|所有者|注释]           |
+ * |  [添加...][编辑...][移除...][刷新列表 ]      |
+ * ------------------------------------------
+ */
+class WorkspaceSelectionStep(context: ImportProjectContext) :
+    AbstractWizardStep(STEP_ID, TfsBundle.message("WorkspaceSelectionStep.title"), context) {
+
+    companion object {
+        private const val STEP_ID = "workspace-selection"
+    }
+
+    private lateinit var table: JBTable
+    private lateinit var tableModel: WorkspaceTableModel
+    private lateinit var statusLabel: JBLabel
+
+    override fun buildComponent(): JComponent {
+
+        // 标题区域（FormBuilder）
+        val builder = FormBuilder.createFormBuilder()
+        builder.addComponent(JLabel(TfsBundle.message("WorkspaceSelectionStep.description")))
+        builder.addSeparator()
+        val formPanel = builder.panel
+
+        // 内容区域
+        val contentPanel = JPanel(BorderLayout(0, JBUI.scale(8)))
+        contentPanel.border = JBUI.Borders.empty(10)
+
+        // 顶部：说明文字
+        val tipLabel = JBLabel(TfsBundle.message("WorkspaceSelectionStep.Text"))
+        tipLabel.foreground = JBColor.gray
+        tipLabel.border = JBUI.Borders.emptyBottom(8)
+        contentPanel.add(tipLabel, BorderLayout.NORTH)
+
+        // 中间：工作区表格
+        contentPanel.add(createTablePanel(), BorderLayout.CENTER)
+
+        // 底部：按钮
+        contentPanel.add(createButtonPanel(), BorderLayout.SOUTH)
+
+        // 整体
+        val panel = JPanel(BorderLayout())
+        panel.add(formPanel, BorderLayout.NORTH)
+        panel.add(contentPanel, BorderLayout.CENTER)
+
+        // 自动加载工作区
+        loadWorkspaces()
+
+        return panel
+    }
+
+    // ==================== UI 构建 ====================
+
+    private fun createTablePanel(): JComponent {
+        tableModel = WorkspaceTableModel()
+        table = JBTable(tableModel)
+
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
+        table.setShowGrid(false)
+        table.intercellSpacing = Dimension(0, 0)
+        table.rowHeight = JBUI.scale(24)
+        table.columnModel.getColumn(0).preferredWidth = 150
+        table.columnModel.getColumn(1).preferredWidth = 100
+        table.columnModel.getColumn(2).preferredWidth = 120
+        table.columnModel.getColumn(3).preferredWidth = 200
+
+        table.setDefaultRenderer(Any::class.java, object : DefaultTableCellRenderer() {
+            override fun getTableCellRendererComponent(
+                table: JTable?, value: Any?, selected: Boolean, focus: Boolean, row: Int, column: Int
+            ): Component {
+                val c = super.getTableCellRendererComponent(table, value, selected, focus, row, column)
+                border = JBUI.Borders.empty(2, 6)
+                return c
+            }
+        })
+
+        table.addMouseListener(object : MouseAdapter() {
+            override fun mouseClicked(e: MouseEvent) {
+                if (e.clickCount == 2 && table.selectedRow >= 0) {
+                    // 双击可触发向导的"下一步"
+                }
+            }
+        })
+
+        statusLabel = JBLabel(TfsBundle.message("WorkspaceSelectionStep.status.loading"))
+        statusLabel.foreground = JBColor.gray
+
+        val scrollPane = JBScrollPane(table)
+        scrollPane.preferredSize = Dimension(500, 200)
+
+        val panel = JPanel(BorderLayout())
+        panel.add(scrollPane, BorderLayout.CENTER)
+        return panel
+    }
+
+    private fun createButtonPanel(): JComponent {
+        val panel = JPanel(BorderLayout())
+        panel.border = JBUI.Borders.emptyTop(8)
+
+        val buttonPanel = JPanel()
+        buttonPanel.layout = BoxLayout(buttonPanel, BoxLayout.X_AXIS)
+
+        val addButton = JButton(TfsBundle.message("WorkspacesControl.AddButtonText"))
+        addButton.addActionListener { /* TODO: 实现添加工作区 */ }
+        buttonPanel.add(addButton)
+        buttonPanel.add(Box.createHorizontalStrut(JBUI.scale(4)))
+
+        val editButton = JButton(TfsBundle.message("WorkspacesControl.EditButtonText"))
+        editButton.addActionListener { /* TODO: 实现编辑工作区 */ }
+        buttonPanel.add(editButton)
+        buttonPanel.add(Box.createHorizontalStrut(JBUI.scale(4)))
+
+        val removeButton = JButton(TfsBundle.message("WorkspacesControl.RemoveButtonText"))
+        removeButton.addActionListener { /* TODO: 实现移除工作区 */ }
+        buttonPanel.add(removeButton)
+        buttonPanel.add(Box.createHorizontalStrut(JBUI.scale(4)))
+
+        val refreshButton = JButton(TfsBundle.message("WorkspacesControl.RefreshButtonText"))
+        refreshButton.addActionListener { loadWorkspaces() }
+        buttonPanel.add(refreshButton)
+
+        panel.add(buttonPanel, BorderLayout.WEST)
+        panel.add(statusLabel, BorderLayout.EAST)
+
+        return panel
+    }
+
+    // ==================== 数据加载 ====================
+
+    fun loadWorkspaces() {
+        if (!context.isServerConfigured()) {
+            Messages.showErrorDialog(
+                TfsBundle.message("CollectionSelectionStep.error.configureServerFirst"),
+                TfsBundle.message("WorkspaceSelectionStep.title")
+            )
+            return
+        }
+
+        statusLabel.text = TfsBundle.message("WorkspaceSelectionStep.status.loading")
+        statusLabel.foreground = JBColor.gray
+        table.isEnabled = false
+
+        ProgressManager.getInstance().run(object : Task.Backgroundable(
+            null, TfsBundle.message("WorkspaceSelectionStep.progress.loading"), true
+        ) {
+            override fun run(indicator: ProgressIndicator) {
+                indicator.text = TfsBundle.message("WorkspaceSelectionStep.progress.connecting")
+                indicator.isIndeterminate = true
+
+                try {
+                    val connectionService = ApplicationManager.getApplication()
+                        .getService(TfsConnectionService::class.java)
+                    val workspaces = connectionService.getWorkspaces(context)
+
+                    SwingUtilities.invokeLater {
+                        tableModel.setData(workspaces)
+
+                        if (workspaces.isEmpty()) {
+                            statusLabel.text = TfsBundle.message("WorkspaceSelectionStep.status.noResults")
+                            statusLabel.foreground = JBColor.ORANGE
+                        } else {
+                            statusLabel.text = TfsBundle.message(
+                                "WorkspaceSelectionStep.status.loaded", workspaces.size
+                            )
+                            statusLabel.foreground = JBColor.GRAY
+                        }
+
+                        table.isEnabled = true
+                        if (table.rowCount > 0) {
+                            table.setRowSelectionInterval(0, 0)
+                        }
+                    }
+                } catch (e: Exception) {
+                    SwingUtilities.invokeLater {
+                        table.isEnabled = true
+                        Messages.showErrorDialog(
+                            TfsBundle.message("WorkspaceSelectionStep.error.loadingFailed", e.message ?: ""),
+                            TfsBundle.message("WorkspaceSelectionStep.title")
+                        )
+                    }
+                }
+            }
+        })
+    }
+
+    // ==================== 表格模型 ====================
+
+    private inner class WorkspaceTableModel : AbstractTableModel() {
+        private val columnNames = arrayOf(
+            TfsBundle.message("WorkspacesTable.ColumnNameName"),
+            TfsBundle.message("WorkspacesTable.ColumnNameComputer"),
+            TfsBundle.message("WorkspacesTable.Owner"),
+            TfsBundle.message("WorkspacesTable.ColumnNameComment")
+        )
+
+        private var data: List<TfsConnectionService.WorkspaceInfo> = emptyList()
+
+        fun setData(workspaces: List<TfsConnectionService.WorkspaceInfo>) {
+            data = workspaces
+            fireTableDataChanged()
+        }
+
+        fun getSelectedItem(): TfsConnectionService.WorkspaceInfo? {
+            val row = table.selectedRow
+            return if (row in data.indices) data[row] else null
+        }
+
+        override fun getRowCount(): Int = data.size
+
+        override fun getColumnCount(): Int = columnNames.size
+
+        override fun getColumnName(column: Int): String = columnNames[column]
+
+        override fun getValueAt(rowIndex: Int, columnIndex: Int): Any {
+            val ws = data[rowIndex]
+            return when (columnIndex) {
+                0 -> ws.name
+                1 -> ws.computer
+                2 -> ws.owner
+                3 -> ws.comment
+                else -> ""
+            }
+        }
+    }
+
+    // ==================== 步骤接口 ====================
+
+    override fun isComplete(): Boolean = table.selectedRow >= 0
+
+    override fun getPreferredFocusedComponent(): JComponent = if (::table.isInitialized) table else super.getPreferredFocusedComponent()!!
+
+    override fun onFinish(): Boolean {
+        val selected = tableModel.getSelectedItem()
+        if (selected != null) {
+            context.workspaceName = selected.name
+        }
+        return true
+    }
+}
