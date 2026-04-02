@@ -14,6 +14,7 @@ import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.FormBuilder
 import com.intellij.util.ui.JBUI
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace
 import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.Dimension
@@ -227,14 +228,14 @@ class WorkspaceSelectionStep(context: ImportProjectContext) :
             TfsBundle.message("WorkspacesTable.ColumnNameComment")
         )
 
-        private var data: List<TfsConnectionService.WorkspaceInfo> = emptyList()
+        private var data: List<Workspace> = emptyList()
 
-        fun setData(workspaces: List<TfsConnectionService.WorkspaceInfo>) {
+        fun setData(workspaces: List<Workspace>) {
             data = workspaces
             fireTableDataChanged()
         }
 
-        fun getSelectedItem(): TfsConnectionService.WorkspaceInfo? {
+        fun getSelectedItem(): Workspace? {
             val row = table.selectedRow
             return if (row in data.indices) data[row] else null
         }
@@ -250,8 +251,8 @@ class WorkspaceSelectionStep(context: ImportProjectContext) :
             return when (columnIndex) {
                 0 -> ws.name
                 1 -> ws.computer
-                2 -> ws.owner
-                3 -> ws.comment
+                2 -> ws.ownerDisplayName
+                3 -> ws.comment ?: ""
                 else -> ""
             }
         }
@@ -267,6 +268,7 @@ class WorkspaceSelectionStep(context: ImportProjectContext) :
         val selected = tableModel.getSelectedItem()
         if (selected != null) {
             context.workspaceName = selected.name
+            context.workspace = selected
         }
         return true
     }

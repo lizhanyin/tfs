@@ -4,6 +4,7 @@ import com.github.lizhanyin.tfs.TfsBundle
 import com.github.lizhanyin.tfs.client.catalog.CrossCollectionProjectInfo
 import com.github.lizhanyin.tfs.client.ui.framework.UIContext
 import com.microsoft.tfs.core.TFSConnection
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace
 import java.net.URI
 
 /**
@@ -27,6 +28,7 @@ class ImportProjectContext {
 
     // 选中的工作区
     var workspaceName: String? = null
+    var workspace: Workspace? = null
 
     // 选中的项目/分支
     val selectedProjects: MutableList<String> = mutableListOf()
