@@ -33,21 +33,27 @@ import javax.swing.table.DefaultTableCellRenderer
  * 团队项目选择步骤（第二步）
  *
  * UI 布局（参考 CLAUDE.md）：
- * ┌──────────────────────────────────────┐
- * │  [筛选输入框]  (tip: 键入内容以筛选列表) │
- * ├──────────────────────────────────────┤
- * │  [table header: 团队项目            ] │
- * │  [table row 1                      ] │
- * │  [table row 2                      ] │
- * │  [table row 3                      ] │
- * ├──────────────────────────────────────┤
- * │  [icon] 服务器: http://tfs...        │
- * │         用户: domain\user            │
- * │  若要更改服务器，请使用"返回"按钮       │
- * └──────────────────────────────────────┘
+ * ------------------------------------------
+ * │  从 Team Foundation Server 导入项目  [X ]│
+ * │----------------------------------------│
+ * │  团队项目选择                  [img_2x2 ]│
+ * │    从列表中选择一个团队项目                 │
+ * │----------------------------------------│
+ * │  [input                    ] (tip: 键入内容以筛选列表) │
+ * │  [table  head               ]          │
+ * │  [table  row1               ]          │
+ * │  [table  row2               ]          │
+ * │  [table  row3               ]          │
+ * │  [img_2x2 ]  [a ] (tfs url)            │
+ * │             [label ] (tfs username)     │
+ * │  [label ] (tip: 若要更改服务器，请使用‘返回’按钮)│
+ * │  [进度条 ]                               │
+ * │----------------------------------------│
+ * │ [上一步 ] [下一步 ]     [完成](禁用) [放弃 ]│
+ * -----------------------------------------│
  */
 class CollectionSelectionStep(context: ImportProjectContext) :
-    AbstractWizardStep(STEP_ID, TfsBundle.message("TeamProjectSelectionStep.title"), context) {
+    AbstractWizardStep(STEP_ID, TfsBundle.message("CollectionSelectionStep.title"), context) {
 
     companion object {
         private const val STEP_ID = "team-project-selection"
@@ -70,7 +76,7 @@ class CollectionSelectionStep(context: ImportProjectContext) :
 
         // 标题区域（FormBuilder）
         val builder = FormBuilder.createFormBuilder()
-        builder.addComponent(JLabel(TfsBundle.message("ServerSelectionStep.description")))
+        builder.addComponent(JLabel(TfsBundle.message("CollectionSelectionStep.description")))
         builder.addSeparator()
         val formPanel = builder.panel
 
@@ -107,7 +113,7 @@ class CollectionSelectionStep(context: ImportProjectContext) :
         val panel = JPanel(BorderLayout(4, 0))
 
         filterField = com.intellij.ui.components.JBTextField()
-        filterField.emptyText.text = TfsBundle.message("TeamProjectSelectionStep.filter.placeholder")
+        filterField.emptyText.text = TfsBundle.message("CollectionSelectionStep.filter.placeholder")
         filterField.document.addDocumentListener(object : DocumentAdapter() {
             override fun textChanged(e: DocumentEvent) {
                 tableModel.filter(filterField.text.trim())
@@ -154,7 +160,7 @@ class CollectionSelectionStep(context: ImportProjectContext) :
         })
 
         // 状态标签（覆盖在表格区域）
-        statusLabel = JBLabel(TfsBundle.message("TeamProjectSelectionStep.status.loading"))
+        statusLabel = JBLabel(TfsBundle.message("CollectionSelectionStep.status.loading"))
         statusLabel.foreground = JBColor.gray
 
         val scrollPane = JBScrollPane(table)
@@ -204,7 +210,7 @@ class CollectionSelectionStep(context: ImportProjectContext) :
         panel.add(infoPanel, BorderLayout.NORTH)
 
         // 提示标签
-        tipLabel = JBLabel(TfsBundle.message("TeamProjectSelectionStep.tip.changeServer"))
+        tipLabel = JBLabel(TfsBundle.message("CollectionSelectionStep.tip.changeServer"))
         tipLabel.foreground = JBColor.gray
         panel.add(tipLabel, BorderLayout.SOUTH)
 
@@ -221,7 +227,7 @@ class CollectionSelectionStep(context: ImportProjectContext) :
      */
     private fun updateServerInfo() {
         val serverText = buildString {
-            append(TfsBundle.message("TeamProjectSelectionStep.label.serverUrl"))
+            append(TfsBundle.message("CollectionSelectionStep.label.serverUrl"))
             append(" ")
             append(context.serverUrl ?: "")
             val collection = context.collection
@@ -234,7 +240,7 @@ class CollectionSelectionStep(context: ImportProjectContext) :
         }
 
         val userText = buildString {
-            append(TfsBundle.message("TeamProjectSelectionStep.label.userName"))
+            append(TfsBundle.message("CollectionSelectionStep.label.userName"))
             append(" ")
             val user = context.username
             if (!user.isNullOrEmpty()) {
@@ -257,21 +263,21 @@ class CollectionSelectionStep(context: ImportProjectContext) :
      */
     fun loadTeamProjects() {
         if (!context.isServerConfigured()) {
-            statusLabel.text = TfsBundle.message("TeamProjectSelectionStep.error.configureServerFirst")
+            statusLabel.text = TfsBundle.message("CollectionSelectionStep.error.configureServerFirst")
             statusLabel.foreground = JBColor.RED
             return
         }
 
-        statusLabel.text = TfsBundle.message("TeamProjectSelectionStep.status.loading")
+        statusLabel.text = TfsBundle.message("CollectionSelectionStep.status.loading")
         statusLabel.foreground = JBColor.gray
         table.isEnabled = false
         filterField.isEnabled = false
 
         ProgressManager.getInstance().run(object : Task.Backgroundable(
-            null, TfsBundle.message("TeamProjectSelectionStep.progress.loading"), true
+            null, TfsBundle.message("CollectionSelectionStep.progress.loading"), true
         ) {
             override fun run(indicator: ProgressIndicator) {
-                indicator.text = TfsBundle.message("TeamProjectSelectionStep.progress.connecting")
+                indicator.text = TfsBundle.message("CollectionSelectionStep.progress.connecting")
                 indicator.isIndeterminate = true
 
                 try {
@@ -286,11 +292,11 @@ class CollectionSelectionStep(context: ImportProjectContext) :
                         tableModel.filter(filterField.text.trim())
 
                         if (projects.isEmpty()) {
-                            statusLabel.text = TfsBundle.message("TeamProjectSelectionStep.status.noResults")
+                            statusLabel.text = TfsBundle.message("CollectionSelectionStep.status.noResults")
                             statusLabel.foreground = JBColor.ORANGE
                         } else {
                             statusLabel.text = TfsBundle.message(
-                                "TeamProjectSelectionStep.status.loaded", projects.size
+                                "CollectionSelectionStep.status.loaded", projects.size
                             )
                             statusLabel.foreground = JBColor.GRAY
                         }
@@ -306,7 +312,7 @@ class CollectionSelectionStep(context: ImportProjectContext) :
                 } catch (e: Exception) {
                     SwingUtilities.invokeLater {
                         statusLabel.text = TfsBundle.message(
-                            "TeamProjectSelectionStep.error.loadingFailed", e.message ?: ""
+                            "CollectionSelectionStep.error.loadingFailed", e.message ?: ""
                         )
                         statusLabel.foreground = JBColor.RED
                         table.isEnabled = true
@@ -324,8 +330,8 @@ class CollectionSelectionStep(context: ImportProjectContext) :
      */
     private inner class TeamProjectTableModel : AbstractTableModel() {
         private val columnNames = arrayOf(
-            TfsBundle.message("TeamProjectSelectionStep.table.column.name"),
-            TfsBundle.message("TeamProjectSelectionStep.table.column.collection")
+            TfsBundle.message("CollectionSelectionStep.table.column.name"),
+            TfsBundle.message("CollectionSelectionStep.table.column.collection")
         )
         private var allData: List<CrossCollectionProjectInfo> = emptyList()
         private var filteredData: List<CrossCollectionProjectInfo> = emptyList()
