@@ -120,8 +120,8 @@ class WorkspaceEditDialog(
         advancedBuilder.addLabeledComponent(
             TfsBundle.message("WorkspaceDetailsControl.PermissionsLabel"), permissionCombo)
         advancedBuilder.addSeparator()
-        advancedBuilder.addLabeledComponent(
-            TfsBundle.message("WorkspaceDetailsControl.CommentLabelText"),
+        advancedBuilder.addComponent(JLabel(TfsBundle.message("WorkspaceDetailsControl.CommentLabelText")))
+        advancedBuilder.addComponent(
             JScrollPane(commentArea).apply {
                 preferredSize = Dimension(400, 60)
             })
@@ -149,8 +149,8 @@ class WorkspaceEditDialog(
             TfsBundle.message("WorkspaceDetailsControl.NameLabelText"), nameField)
         mainBuilder.addComponent(advancedPanel)
         mainBuilder.addSeparator()
-        mainBuilder.addLabeledComponent(
-            TfsBundle.message("WorkspaceEditControl.WorkingFoldersLabelText"),
+        mainBuilder.addComponent(JLabel(TfsBundle.message("WorkspaceEditControl.WorkingFoldersLabelText")))
+        mainBuilder.addComponent(
             JScrollPane(workingFolderTable).apply {
                 preferredSize = Dimension(580, 120)
             })
