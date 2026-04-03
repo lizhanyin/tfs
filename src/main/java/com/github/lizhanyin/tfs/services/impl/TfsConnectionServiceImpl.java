@@ -1,6 +1,13 @@
 package com.github.lizhanyin.tfs.services.impl;
 
 import com.github.lizhanyin.tfs.client.catalog.CrossCollectionProjectInfo;
+import com.github.lizhanyin.tfs.client.commands.CreateWorkspaceCommand;
+import com.github.lizhanyin.tfs.client.framework.command.CommandExecutor;
+import com.github.lizhanyin.tfs.client.framework.command.ICommandExecutor;
+import com.github.lizhanyin.tfs.client.framework.command.ThreadedCancellableCommand;
+import com.github.lizhanyin.tfs.client.ui.framework.UIContext;
+import com.github.lizhanyin.tfs.client.ui.framework.command.UICommandFinishedCallbackFactory;
+import com.github.lizhanyin.tfs.client.ui.framework.command.WizardContainerCommandExecutor;
 import com.github.lizhanyin.tfs.client.ui.tasks.ConnectToConfigurationServerTask;
 import com.github.lizhanyin.tfs.client.ui.wizard.WizardCollectionSelectionPage;
 import com.github.lizhanyin.tfs.client.ui.wizard.WizardServerSelectionPage;
@@ -14,6 +21,8 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.microsoft.tfs.core.TFSConnection;
 import com.microsoft.tfs.core.TFSTeamProjectCollection;
 import com.microsoft.tfs.core.clients.versioncontrol.VersionControlClient;
+import com.microsoft.tfs.core.clients.versioncontrol.WorkspaceLocation;
+import com.microsoft.tfs.core.clients.versioncontrol.WorkspacePermissionProfile;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Item;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
@@ -90,6 +99,46 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
     public List<Workspace> getWorkspaces(@NotNull ImportProjectContext context) throws Exception {
         Workspace[] workspaces = new WizardWorkspacePage(context).queryWorkspace(false);
         return Arrays.asList(workspaces);
+    }
+
+    // ==================== 创建工作区 ====================
+
+    @Override
+    @NotNull
+    public Workspace createWorkspace(@NotNull ImportProjectContext context,
+                                     @NotNull String name,
+                                     @Nullable String comment,
+                                     @NotNull WorkspaceLocation location,
+                                     @NotNull WorkspacePermissionProfile permissionProfile) throws Exception {
+        final TFSTeamProjectCollection connection = context.getCollection().getCollection();
+        final CreateWorkspaceCommand command = new CreateWorkspaceCommand(
+                connection,
+                null, // workingFolders - 创建时无映射
+                name,
+                comment,
+                location,
+                null, // options - 使用默认
+                permissionProfile);
+
+        final ICommandExecutor executor = new CommandExecutor();
+        final IStatus status = executor.execute(command);
+        if (!status.isOK()) {
+            throw new Exception("创建工作区失败: " + status.getMessage());
+        }
+        return command.getWorkspace();
+    }
+
+    // ==================== 删除工作区 ====================
+
+    @Override
+    public void deleteWorkspace(@NotNull ImportProjectContext context, @NotNull Workspace workspace) throws Exception {
+        TFSTeamProjectCollection tpc = null;
+        try {
+            tpc = smartConnect(context);
+            tpc.getVersionControlClient().deleteWorkspace(workspace);
+        } finally {
+            closeConnection(tpc);
+        }
     }
 
     // ==================== 获取子项目 ====================

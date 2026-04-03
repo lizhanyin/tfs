@@ -3,8 +3,13 @@ package com.github.lizhanyin.tfs.services;
 import com.github.lizhanyin.tfs.client.catalog.CrossCollectionProjectInfo;
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext;
 import com.microsoft.tfs.core.TFSConnection;
+import com.microsoft.tfs.core.clients.versioncontrol.WorkspaceLocation;
+import com.microsoft.tfs.core.clients.versioncontrol.WorkspaceOptions;
+import com.microsoft.tfs.core.clients.versioncontrol.WorkspacePermissionProfile;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkingFolder;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -43,6 +48,33 @@ public interface TfsConnectionService {
      */
     @NotNull
     List<Workspace> getWorkspaces(@NotNull ImportProjectContext context) throws Exception;
+
+    /**
+     * 创建工作区
+     *
+     * @param context             导入项目上下文
+     * @param name                工作区名称
+     * @param comment             注释（可为 null）
+     * @param location            工作区位置
+     * @param permissionProfile   权限配置
+     * @return 创建的工作区
+     * @throws Exception 如果创建失败
+     */
+    @NotNull
+    Workspace createWorkspace(@NotNull ImportProjectContext context,
+                              @NotNull String name,
+                              @Nullable String comment,
+                              @NotNull WorkspaceLocation location,
+                              @NotNull WorkspacePermissionProfile permissionProfile) throws Exception;
+
+    /**
+     * 删除工作区
+     *
+     * @param context   导入项目上下文
+     * @param workspace 要删除的工作区
+     * @throws Exception 如果删除失败
+     */
+    void deleteWorkspace(@NotNull ImportProjectContext context, @NotNull Workspace workspace) throws Exception;
 
     /**
      * 获取团队项目列表

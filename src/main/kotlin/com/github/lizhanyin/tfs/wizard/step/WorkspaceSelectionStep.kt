@@ -3,6 +3,7 @@ package com.github.lizhanyin.tfs.wizard.step
 import com.github.lizhanyin.tfs.TfsBundle
 import com.github.lizhanyin.tfs.services.TfsConnectionService
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext
+import com.github.lizhanyin.tfs.wizard.dialog.WorkspaceEditDialog
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.progress.ProgressIndicator
@@ -14,6 +15,8 @@ import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.FormBuilder
 import com.intellij.util.ui.JBUI
+import com.microsoft.tfs.core.clients.versioncontrol.WorkspaceLocation
+import com.microsoft.tfs.core.clients.versioncontrol.WorkspacePermissionProfile
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace
 import java.awt.BorderLayout
 import java.awt.Component
@@ -48,6 +51,9 @@ class WorkspaceSelectionStep(context: ImportProjectContext) :
     private lateinit var table: JBTable
     private lateinit var tableModel: WorkspaceTableModel
     private lateinit var statusLabel: JBLabel
+    private lateinit var editButton: JButton
+    private lateinit var removeButton: JButton
+    private lateinit var refreshButton: JButton
 
     override fun buildComponent(): JComponent {
 
@@ -112,10 +118,16 @@ class WorkspaceSelectionStep(context: ImportProjectContext) :
         table.addMouseListener(object : MouseAdapter() {
             override fun mouseClicked(e: MouseEvent) {
                 if (e.clickCount == 2 && table.selectedRow >= 0) {
-                    // 双击可触发向导的"下一步"
+                    editWorkspace()
                 }
             }
         })
+
+        table.selectionModel.addListSelectionListener {
+            val hasSelection = table.selectedRow >= 0
+            editButton.isEnabled = hasSelection
+            removeButton.isEnabled = hasSelection
+        }
 
         statusLabel = JBLabel(TfsBundle.message("WorkspaceSelectionStep.status.loading"))
         statusLabel.foreground = JBColor.gray
@@ -136,21 +148,24 @@ class WorkspaceSelectionStep(context: ImportProjectContext) :
         buttonPanel.layout = BoxLayout(buttonPanel, BoxLayout.X_AXIS)
 
         val addButton = JButton(TfsBundle.message("WorkspacesControl.AddButtonText"))
-        addButton.addActionListener { /* TODO: 实现添加工作区 */ }
+        addButton.addActionListener { addWorkspace() }
         buttonPanel.add(addButton)
         buttonPanel.add(Box.createHorizontalStrut(JBUI.scale(4)))
 
-        val editButton = JButton(TfsBundle.message("WorkspacesControl.EditButtonText"))
-        editButton.addActionListener { /* TODO: 实现编辑工作区 */ }
+        editButton = JButton(TfsBundle.message("WorkspacesControl.EditButtonText")).apply {
+            isEnabled = false
+            addActionListener { editWorkspace() }
+        }
         buttonPanel.add(editButton)
         buttonPanel.add(Box.createHorizontalStrut(JBUI.scale(4)))
 
-        val removeButton = JButton(TfsBundle.message("WorkspacesControl.RemoveButtonText"))
-        removeButton.addActionListener { /* TODO: 实现移除工作区 */ }
+        removeButton = JButton(TfsBundle.message("WorkspacesControl.RemoveButtonText")).apply {
+            isEnabled = false
+            addActionListener { removeWorkspace() }
+        }
         buttonPanel.add(removeButton)
         buttonPanel.add(Box.createHorizontalStrut(JBUI.scale(4)))
-
-        val refreshButton = JButton(TfsBundle.message("WorkspacesControl.RefreshButtonText"))
+        refreshButton = JButton(TfsBundle.message("WorkspacesControl.RefreshButtonText"))
         refreshButton.addActionListener { loadWorkspaces() }
         buttonPanel.add(refreshButton)
 
@@ -158,6 +173,61 @@ class WorkspaceSelectionStep(context: ImportProjectContext) :
         panel.add(statusLabel, BorderLayout.EAST)
 
         return panel
+    }
+
+    // ==================== 工作区操作 ====================
+
+    private fun addWorkspace() {
+        val parentWindow = SwingUtilities.getWindowAncestor(table)
+        val dialog = WorkspaceEditDialog(parentWindow, context, null)
+        if (dialog.showAndGet()) {
+            val ws = dialog.createdWorkspace
+            if (ws != null) {
+                loadWorkspaces()
+            }
+        }
+    }
+
+    private fun editWorkspace() {
+        val selected = tableModel.getSelectedItem() ?: return
+        val parentWindow = SwingUtilities.getWindowAncestor(table)
+        val dialog = WorkspaceEditDialog(parentWindow, context, selected)
+        if (dialog.showAndGet()) {
+            loadWorkspaces()
+        }
+    }
+
+    private fun removeWorkspace() {
+        val selected = tableModel.getSelectedItem() ?: return
+
+        val confirmed = Messages.showYesNoDialog(
+            TfsBundle.message("WorkspacesControl.SingleDeleteConfirmDialogText"),
+            TfsBundle.message("WorkspacesControl.SingleDeleteConfirmDialogTitle"),
+            Messages.getQuestionIcon()
+        )
+
+        if (confirmed != Messages.YES) return
+
+        ProgressManager.getInstance().run(object : Task.Backgroundable(
+            null, TfsBundle.message("WorkspaceSelectionStep.progress.loading"), true
+        ) {
+            override fun run(indicator: ProgressIndicator) {
+                try {
+                    val connectionService = ApplicationManager.getApplication()
+                        .getService(TfsConnectionService::class.java)
+                    connectionService.deleteWorkspace(context, selected)
+
+                    SwingUtilities.invokeLater { loadWorkspaces() }
+                } catch (e: Exception) {
+                    SwingUtilities.invokeLater {
+                        Messages.showErrorDialog(
+                            TfsBundle.message("WorkspaceSelectionStep.error.loadingFailed", e.message ?: ""),
+                            TfsBundle.message("WorkspaceSelectionStep.title")
+                        )
+                    }
+                }
+            }
+        })
     }
 
     // ==================== 数据加载 ====================
