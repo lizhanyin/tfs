@@ -1,13 +1,7 @@
 package com.github.lizhanyin.tfs.services.impl;
 
 import com.github.lizhanyin.tfs.client.catalog.CrossCollectionProjectInfo;
-import com.github.lizhanyin.tfs.client.commands.CreateWorkspaceCommand;
-import com.github.lizhanyin.tfs.client.framework.command.CommandExecutor;
-import com.github.lizhanyin.tfs.client.framework.command.ICommandExecutor;
-import com.github.lizhanyin.tfs.client.framework.command.ThreadedCancellableCommand;
-import com.github.lizhanyin.tfs.client.ui.framework.UIContext;
-import com.github.lizhanyin.tfs.client.ui.framework.command.UICommandFinishedCallbackFactory;
-import com.github.lizhanyin.tfs.client.ui.framework.command.WizardContainerCommandExecutor;
+import com.github.lizhanyin.tfs.client.ui.controls.workspaces.WorkspaceData;
 import com.github.lizhanyin.tfs.client.ui.tasks.ConnectToConfigurationServerTask;
 import com.github.lizhanyin.tfs.client.ui.wizard.WizardCollectionSelectionPage;
 import com.github.lizhanyin.tfs.client.ui.wizard.WizardServerSelectionPage;
@@ -22,6 +16,7 @@ import com.microsoft.tfs.core.TFSConnection;
 import com.microsoft.tfs.core.TFSTeamProjectCollection;
 import com.microsoft.tfs.core.clients.versioncontrol.VersionControlClient;
 import com.microsoft.tfs.core.clients.versioncontrol.WorkspaceLocation;
+import com.microsoft.tfs.core.clients.versioncontrol.WorkspaceOptions;
 import com.microsoft.tfs.core.clients.versioncontrol.WorkspacePermissionProfile;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Item;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
@@ -102,17 +97,22 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
     }
 
     // ==================== 创建工作区 ====================
+    @Override
+    @NotNull
+    public Workspace createWorkspace(@NotNull ImportProjectContext context, @NotNull WorkspaceData workspaceData) throws Exception {
+        return new WizardWorkspacePage(context).createWorkspace(workspaceData);
+    }
+
+    // ==================== 创建工作区 ====================
 
     @Override
     @NotNull
-    public Workspace createWorkspace(@NotNull ImportProjectContext context,
-                                     @NotNull String name,
-                                     @Nullable String comment,
-                                     @NotNull WorkspaceLocation location,
-                                     @NotNull WorkspacePermissionProfile permissionProfile) throws Exception {
-        return new WizardWorkspacePage(context).addWorkspace(name, comment, location, permissionProfile);
+    public Workspace updateWorkspace(@NotNull ImportProjectContext context,
+                                     @NotNull WorkspaceData newWorkspaceData,
+                                     @NotNull WorkspaceData oldWorkspaceData,
+                                     @NotNull Workspace workspace) throws Exception {
+        return new WizardWorkspacePage(context).updateWorkspace(newWorkspaceData, oldWorkspaceData, workspace);
     }
-
     // ==================== 删除工作区 ====================
 
     @Override

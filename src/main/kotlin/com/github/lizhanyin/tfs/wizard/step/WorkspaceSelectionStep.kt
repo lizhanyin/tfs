@@ -1,23 +1,24 @@
 package com.github.lizhanyin.tfs.wizard.step
 
 import com.github.lizhanyin.tfs.TfsBundle
+import com.github.lizhanyin.tfs.client.ui.controls.workspaces.WorkspaceData
 import com.github.lizhanyin.tfs.services.TfsConnectionService
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext
 import com.github.lizhanyin.tfs.wizard.dialog.WorkspaceEditDialog
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
+import com.intellij.openapi.ui.Messages
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
+import com.intellij.util.containers.toArray
 import com.intellij.util.ui.FormBuilder
 import com.intellij.util.ui.JBUI
-import com.microsoft.tfs.core.clients.versioncontrol.WorkspaceLocation
-import com.microsoft.tfs.core.clients.versioncontrol.WorkspacePermissionProfile
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace
+import com.microsoft.tfs.jni.helpers.LocalHost
 import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.Dimension
@@ -54,6 +55,8 @@ class WorkspaceSelectionStep(context: ImportProjectContext) :
     private lateinit var editButton: JButton
     private lateinit var removeButton: JButton
     private lateinit var refreshButton: JButton
+
+    private lateinit var workspaces: List<Workspace>
 
     override fun buildComponent(): JComponent {
 
@@ -178,7 +181,15 @@ class WorkspaceSelectionStep(context: ImportProjectContext) :
 
     private fun addWorkspace() {
         val parentWindow = SwingUtilities.getWindowAncestor(table)
-        val dialog = WorkspaceEditDialog(parentWindow, context, null)
+
+        /*
+         * Compute a default name for the new workspace.
+         */
+        val existingWorkspaces = workspaces.toArray(arrayOfNulls(0))
+        val defaultWorkspaceName = Workspace.computeNewWorkspaceName(LocalHost.getShortName(), existingWorkspaces)
+        val workspaceData = WorkspaceData(context.collection?.collection, defaultWorkspaceName)
+
+        val dialog = WorkspaceEditDialog(parentWindow, context, true, workspaceData, null)
         if (dialog.showAndGet()) {
             val ws = dialog.createdWorkspace
             if (ws != null) {
@@ -189,8 +200,10 @@ class WorkspaceSelectionStep(context: ImportProjectContext) :
 
     private fun editWorkspace() {
         val selected = tableModel.getSelectedItem() ?: return
+
         val parentWindow = SwingUtilities.getWindowAncestor(table)
-        val dialog = WorkspaceEditDialog(parentWindow, context, selected)
+        val workspaceData = WorkspaceData(selected)
+        val dialog = WorkspaceEditDialog(parentWindow, context, false, workspaceData, selected)
         if (dialog.showAndGet()) {
             loadWorkspaces()
         }
@@ -254,7 +267,7 @@ class WorkspaceSelectionStep(context: ImportProjectContext) :
                 try {
                     val connectionService = ApplicationManager.getApplication()
                         .getService(TfsConnectionService::class.java)
-                    val workspaces = connectionService.getWorkspaces(context)
+                    workspaces = connectionService.getWorkspaces(context)
 
                     SwingUtilities.invokeLater {
                         tableModel.setData(workspaces)

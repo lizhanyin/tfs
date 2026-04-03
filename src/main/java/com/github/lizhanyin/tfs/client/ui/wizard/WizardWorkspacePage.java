@@ -1,18 +1,23 @@
 package com.github.lizhanyin.tfs.client.ui.wizard;
 
+import com.github.lizhanyin.tfs.client.Messages;
 import com.github.lizhanyin.tfs.client.commands.CreateWorkspaceCommand;
 import com.github.lizhanyin.tfs.client.commands.QueryLocalWorkspacesCommand;
-import com.github.lizhanyin.tfs.client.framework.command.CommandExecutor;
-import com.github.lizhanyin.tfs.client.framework.command.ICommandExecutor;
+import com.github.lizhanyin.tfs.client.commands.UpdateWorkspaceCommand;
+import com.github.lizhanyin.tfs.client.ui.controls.workspaces.WorkspaceData;
 import com.github.lizhanyin.tfs.runtime.IStatus;
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext;
-import com.microsoft.tfs.core.TFSTeamProjectCollection;
-import com.microsoft.tfs.core.clients.versioncontrol.WorkspaceLocation;
+import com.microsoft.tfs.core.clients.versioncontrol.GetOptions;
+import com.microsoft.tfs.core.clients.versioncontrol.WorkspaceOptions;
 import com.microsoft.tfs.core.clients.versioncontrol.WorkspacePermissionProfile;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkingFolder;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkingFolderComparator;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkingFolderComparatorType;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
 import com.microsoft.tfs.jni.helpers.LocalHost;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+
+import java.util.Arrays;
 
 public class WizardWorkspacePage extends ExtendedWizardPage{
 
@@ -48,58 +53,97 @@ public class WizardWorkspacePage extends ExtendedWizardPage{
                 createCommand.getWorkspace()
             };
         }
-
-//        workspacesTable.setWorkspaces(workspaces);
-//        workspacesTable.setSelectedWorkspaces(previouslySelectedWorkspaces);
-//
-//        if (autoSelect && workspacesTable.getSelectionCount() == 0) {
-//            // Use the default workspace as the initial selection if one
-//            // exists. Otherwise retrieve the last referenced workspace
-//            // name and set it as the default selection.
-//            final RepositoryManager manager =
-//                    TFSCommonUIClientPlugin.getDefault().getProductPlugin().getRepositoryManager();
-//            final TFSRepository defaultRepository = manager.getDefaultRepository();
-//
-//            if (defaultRepository != null) {
-//                workspacesTable.setSelectedWorkspace(defaultRepository.getWorkspace());
-//            } else {
-//                final String lastWorkspaceName =
-//                        getPreferencesNode(viewDataKey, connection).get(PREFS_NODE_LAST_WORKSPACE_NAME, null);
-//                if (lastWorkspaceName != null) {
-//                    workspacesTable.setSelectedWorkspace(lastWorkspaceName);
-//                }
-//            }
-//
-//            if (workspacesTable.getSelectionCount() == 0) {
-//                workspacesTable.selectFirst();
-//            }
-//        }
-
-//        workspacesTable.setFocus();
         return workspaces;
     }
 
-    public Workspace addWorkspace(
-            @NotNull String name,
-            @Nullable String comment,
-            @NotNull WorkspaceLocation location,
-            @NotNull WorkspacePermissionProfile permissionProfile
-    ) throws Exception {
-        final TFSTeamProjectCollection connection = context.getCollection().getCollection();
+    public Workspace createWorkspace(@NotNull WorkspaceData workspaceData) throws Exception {
+        var connection = context.getCollection().getCollection();
         final CreateWorkspaceCommand command = new CreateWorkspaceCommand(
                 connection,
-                null, // workingFolders - 创建时无映射
-                name,
-                comment,
-                location,
-                null, // options - 使用默认
-                permissionProfile);
+                workspaceData.getWorkingFolderDataCollection().createWorkingFolders(),
+                workspaceData.getWorkspaceDetails().getName(),
+                workspaceData.getWorkspaceDetails().getComment(),
+                workspaceData.getWorkspaceDetails().getWorkspaceLocation(),
+                workspaceData.getWorkspaceDetails().getWorkspaceOptions(),
+                workspaceData.getWorkspaceDetails().getPermissionProfile());
 
-        final ICommandExecutor executor = new CommandExecutor();
-        final IStatus status = executor.execute(command);
+        var commandExecutor = getCommandExecutor();
+        final IStatus status = commandExecutor.execute(command);
         if (!status.isOK()) {
             throw new Exception("创建工作区失败: " + status.getMessage());
         }
         return command.getWorkspace();
+    }
+
+    public Workspace updateWorkspace(@NotNull WorkspaceData dataToEdit,
+                                     @NotNull WorkspaceData oldData,
+                                     @NotNull Workspace workspace) throws Exception {
+
+        final UpdateWorkspaceCommand command = new UpdateWorkspaceCommand(
+                workspace,
+                dataToEdit.getWorkspaceDetails().getName(),
+                dataToEdit.getWorkspaceDetails().getComment(),
+                dataToEdit.getWorkingFolderDataCollection().createWorkingFolders(),
+                dataToEdit.getWorkspaceDetails().getWorkspaceOptions(),
+                dataToEdit.getWorkspaceDetails().getWorkspaceLocation(),
+                dataToEdit.getWorkspaceDetails().getPermissionProfile());
+
+        var commandExecutor = getCommandExecutor();
+        if (commandExecutor.execute(command).isOK()) {
+            /*
+             * Check to see if any folders changed.
+             */
+            final WorkingFolder[] oldFolders = oldData.getWorkingFolderDataCollection().createWorkingFolders();
+            final WorkingFolder[] newFolders =
+                    dataToEdit.getWorkingFolderDataCollection().createWorkingFolders();
+
+            Arrays.sort(oldFolders, new WorkingFolderComparator(WorkingFolderComparatorType.SERVER_PATH));
+            Arrays.sort(newFolders, new WorkingFolderComparator(WorkingFolderComparatorType.SERVER_PATH));
+            final boolean foldersChanged = !Arrays.equals(oldFolders, newFolders);
+
+            final WorkspaceOptions oldOptions = oldData.getWorkspaceDetails().getWorkspaceOptions();
+            final WorkspaceOptions newOptions = dataToEdit.getWorkspaceDetails().getWorkspaceOptions();
+
+            final boolean fileTimeChanged = !oldOptions.contains(WorkspaceOptions.SET_FILE_TO_CHECKIN)
+                    && newOptions.contains(WorkspaceOptions.SET_FILE_TO_CHECKIN)
+                    && newFolders.length > 0;
+
+            final GetOptions getOptions = fileTimeChanged ? GetOptions.GET_ALL : GetOptions.NONE;
+
+            if (foldersChanged || fileTimeChanged) {
+                /*
+                 * Prompt to get latest.
+                 *
+                 * Prefer the file time message if folders also changed
+                 * since the force get will handle everything.
+                 */
+//                final boolean getNow = MessageDialog.openQuestion(
+//                        getShell(),
+//                        Messages.getString("WorkspacesControl.WorkspaceModifiedDialogTitle"), //$NON-NLS-1$
+//                        fileTimeChanged ? Messages.getString("WorkspacesControl.SetFileTimeToCheckinGetPrompt") //$NON-NLS-1$
+//                                : Messages.getString("WorkspacesControl.WorkspaceChangedMessage")); //$NON-NLS-1$
+//
+//                if (getNow) {
+//                    final RepositoryManager manager =
+//                            TFSCommonUIClientPlugin.getDefault().getProductPlugin().getRepositoryManager();
+//                    TFSRepository repository = manager.getRepository(selectedWorkspace);
+//                    if (repository == null) {
+//                        repository = new TFSRepository(selectedWorkspace);
+//                    }
+//
+//                    /*
+//                     * GetTask will not prompt for
+//                     * "all files up to date" like GetLatestTask does,
+//                     * and it accepts GetOptions. A GetRequest with a
+//                     * null item spec means "get the whole workspace."
+//                     */
+//                    final GetTask task = new GetTask(getShell(), repository, new GetRequest[] {
+//                            new GetRequest(null, LatestVersionSpec.INSTANCE)
+//                    }, getOptions);
+//                    task.run();
+//                }
+            }
+        }
+        return null;
     }
 }
