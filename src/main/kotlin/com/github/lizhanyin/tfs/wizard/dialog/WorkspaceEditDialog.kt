@@ -6,16 +6,19 @@ import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.components.JBTextField
+import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.FormBuilder
 import com.intellij.util.ui.JBUI
 import com.microsoft.tfs.core.clients.versioncontrol.WorkspaceLocation
 import com.microsoft.tfs.core.clients.versioncontrol.WorkspacePermissionProfile
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkingFolder
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace
 import com.microsoft.tfs.jni.helpers.LocalHost
 import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.Dimension
 import javax.swing.*
+import javax.swing.table.AbstractTableModel
 
 class WorkspaceEditDialog(
     parent: Component?,
@@ -35,6 +38,7 @@ class WorkspaceEditDialog(
     // 高级区域面板
     private lateinit var advancedPanel: JPanel
     private var advancedVisible = false
+    private lateinit var advancedButton: JButton
 
     // 结果
     var createdWorkspace: Workspace? = null
@@ -46,7 +50,30 @@ class WorkspaceEditDialog(
         } else {
             setTitle(TfsBundle.message("WorkspaceEditDialog.AddWorkspaceDialogTitle"))
         }
+        setOKButtonText(TfsBundle.message("WorkspaceEditDialog.OKButtonText"))
+        setCancelButtonText(TfsBundle.message("WorkspaceEditDialog.CancelButtonText"))
         init()
+    }
+
+    override fun createSouthPanel(): JComponent {
+        val southPanel = super.createSouthPanel()
+
+        // 在按钮行左侧插入高级按钮
+        advancedButton = JButton(TfsBundle.message("WorkspaceEditDialog.AdvancedExpand"))
+        advancedButton.addActionListener {
+            advancedVisible = !advancedVisible
+            advancedPanel.isVisible = advancedVisible
+            advancedButton.text = if (advancedVisible)
+                TfsBundle.message("WorkspaceEditDialog.AdvancedCollapse")
+            else
+                TfsBundle.message("WorkspaceEditDialog.AdvancedExpand")
+            window?.pack()
+        }
+
+        // southPanel 默认是 BorderLayout，按钮在 EAST，我们在 WEST 加入高级按钮
+        southPanel.add(advancedButton, BorderLayout.WEST)
+
+        return southPanel
     }
 
     override fun createCenterPanel(): JComponent {
@@ -102,29 +129,31 @@ class WorkspaceEditDialog(
         advancedPanel = advancedBuilder.panel
         advancedPanel.isVisible = false
 
-        // 高级切换按钮
-        val advancedButton = JButton(TfsBundle.message("WorkspaceEditDialog.AdvancedExpand"))
-        advancedButton.addActionListener {
-            advancedVisible = !advancedVisible
-            advancedPanel.isVisible = advancedVisible
-            advancedButton.text = if (advancedVisible)
-                TfsBundle.message("WorkspaceEditDialog.AdvancedCollapse")
-            else
-                TfsBundle.message("WorkspaceEditDialog.AdvancedExpand")
-            advancedPanel.revalidate()
-            advancedPanel.repaint()
-            window?.pack()
-        }
-
         // 填充已有数据
         fillExistingData()
+
+        // 工作文件夹表格
+        val workingFolderTable = JBTable(WorkingFolderTableModel(existingWorkspace?.folders)).apply {
+            setShowGrid(false)
+            intercellSpacing = Dimension(0, 0)
+            rowHeight = JBUI.scale(24)
+            columnModel.getColumn(0).preferredWidth = 80
+            columnModel.getColumn(1).preferredWidth = 250
+            columnModel.getColumn(2).preferredWidth = 250
+            isEnabled = false // 只读浏览
+        }
 
         // 主表单
         val mainBuilder = FormBuilder.createFormBuilder()
         mainBuilder.addLabeledComponent(
             TfsBundle.message("WorkspaceDetailsControl.NameLabelText"), nameField)
-        mainBuilder.addComponent(advancedButton)
         mainBuilder.addComponent(advancedPanel)
+        mainBuilder.addSeparator()
+        mainBuilder.addLabeledComponent(
+            TfsBundle.message("WorkspaceEditControl.WorkingFoldersLabelText"),
+            JScrollPane(workingFolderTable).apply {
+                preferredSize = Dimension(580, 120)
+            })
 
         val panel = JPanel(BorderLayout())
         panel.add(mainBuilder.panel, BorderLayout.NORTH)
@@ -178,5 +207,36 @@ class WorkspaceEditDialog(
         createdWorkspace = null
 
         super.doOKAction()
+    }
+
+    // ==================== 工作文件夹表格模型 ====================
+
+    private class WorkingFolderTableModel(folders: Array<out WorkingFolder>?) : AbstractTableModel() {
+        private val columnNames = arrayOf(
+            TfsBundle.message("WorkingFolderDataTable.ColumnNameStatus"),
+            TfsBundle.message("WorkingFolderDataTable.ColumnNameServerFolder"),
+            TfsBundle.message("WorkingFolderDataTable.ColumnNameLocalFolder")
+        )
+
+        private val data: List<WorkingFolder> = folders?.toList() ?: emptyList()
+
+        override fun getRowCount(): Int = data.size
+
+        override fun getColumnCount(): Int = columnNames.size
+
+        override fun getColumnName(column: Int): String = columnNames[column]
+
+        override fun getValueAt(rowIndex: Int, columnIndex: Int): Any {
+            val folder = data[rowIndex]
+            return when (columnIndex) {
+                0 -> if (folder.type == com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkingFolderType.CLOAK)
+                    TfsBundle.message("WorkingFolderDataTable.TypeCloaked")
+                else
+                    TfsBundle.message("WorkingFolderDataTable.TypeActive")
+                1 -> folder.serverItem ?: ""
+                2 -> folder.localItem ?: TfsBundle.message("WorkingFolderDataTable.Cloaked")
+                else -> ""
+            }
+        }
     }
 }

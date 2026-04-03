@@ -11,7 +11,8 @@ import javax.swing.JComponent
 abstract class AbstractWizardStep(
     private val stepId: String,
     title: String,
-    protected val context: ImportProjectContext
+    protected val context: ImportProjectContext,
+    val description: String? = null
 ) : AbstractWizardStepEx(title) {
 
     private var component: JComponent? = null

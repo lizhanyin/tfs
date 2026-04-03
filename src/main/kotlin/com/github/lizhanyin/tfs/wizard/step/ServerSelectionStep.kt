@@ -34,7 +34,7 @@ import javax.swing.*
  * -----------------------------------------│
  */
 class ServerSelectionStep(context: ImportProjectContext) :
-    AbstractWizardStep(STEP_ID, TfsBundle.message("ServerSelectionStep.title"), context) {
+    AbstractWizardStep(STEP_ID, TfsBundle.message("ServerSelectionStep.title"), context, TfsBundle.message("ServerSelectionStep.description")) {
 
     companion object {
         private const val STEP_ID = "server-selection"
@@ -49,8 +49,6 @@ class ServerSelectionStep(context: ImportProjectContext) :
 
         val builder = FormBuilder.createFormBuilder()
 
-        // 步骤说明
-        builder.addComponent(JLabel(TfsBundle.message("ServerSelectionStep.description")))
         builder.addSeparator()
 
         // 服务器选择面板
@@ -64,6 +62,7 @@ class ServerSelectionStep(context: ImportProjectContext) :
         // 使用 BorderLayout 将内容放在顶部
         val panel = JPanel(BorderLayout())
         panel.add(formPanel, BorderLayout.NORTH)
+
 
         return panel
     }

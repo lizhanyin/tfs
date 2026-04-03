@@ -53,7 +53,7 @@ import javax.swing.table.DefaultTableCellRenderer
  * -----------------------------------------│
  */
 class CollectionSelectionStep(context: ImportProjectContext) :
-    AbstractWizardStep(STEP_ID, TfsBundle.message("CollectionSelectionStep.title"), context) {
+    AbstractWizardStep(STEP_ID, TfsBundle.message("CollectionSelectionStep.title"), context, TfsBundle.message("CollectionSelectionStep.description")) {
 
     companion object {
         private const val STEP_ID = "team-project-selection"
@@ -76,7 +76,6 @@ class CollectionSelectionStep(context: ImportProjectContext) :
 
         // 标题区域（FormBuilder）
         val builder = FormBuilder.createFormBuilder()
-        builder.addComponent(JLabel(TfsBundle.message("CollectionSelectionStep.description")))
         builder.addSeparator()
         val formPanel = builder.panel
 

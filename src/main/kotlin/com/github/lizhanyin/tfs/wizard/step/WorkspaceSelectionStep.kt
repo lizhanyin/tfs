@@ -42,7 +42,7 @@ import javax.swing.table.DefaultTableCellRenderer
  * ------------------------------------------
  */
 class WorkspaceSelectionStep(context: ImportProjectContext) :
-    AbstractWizardStep(STEP_ID, TfsBundle.message("WorkspaceSelectionStep.title"), context) {
+    AbstractWizardStep(STEP_ID, TfsBundle.message("WorkspaceSelectionStep.title"), context, TfsBundle.message("WorkspaceSelectionStep.description")) {
 
     companion object {
         private const val STEP_ID = "workspace-selection"
@@ -59,7 +59,6 @@ class WorkspaceSelectionStep(context: ImportProjectContext) :
 
         // 标题区域（FormBuilder）
         val builder = FormBuilder.createFormBuilder()
-        builder.addComponent(JLabel(TfsBundle.message("WorkspaceSelectionStep.description")))
         builder.addSeparator()
         val formPanel = builder.panel
 

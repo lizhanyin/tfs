@@ -3,9 +3,9 @@ package com.github.lizhanyin.tfs.wizard
 import com.github.lizhanyin.tfs.TfsBundle
 import com.github.lizhanyin.tfs.client.ui.framework.UIContext
 import com.github.lizhanyin.tfs.services.TfsConnectionService
+import com.github.lizhanyin.tfs.wizard.step.CollectionSelectionStep
 import com.github.lizhanyin.tfs.wizard.step.ProjectSelectionStep
 import com.github.lizhanyin.tfs.wizard.step.ServerSelectionStep
-import com.github.lizhanyin.tfs.wizard.step.CollectionSelectionStep
 import com.github.lizhanyin.tfs.wizard.step.WorkspaceSelectionStep
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
@@ -15,11 +15,7 @@ import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBUI
 import org.jetbrains.annotations.Nullable
-import java.awt.BorderLayout
-import java.awt.Color
-import java.awt.Dimension
-import java.awt.FlowLayout
-import java.awt.Font
+import java.awt.*
 import javax.swing.*
 
 /**
@@ -32,6 +28,8 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
     }
 
     val context = ImportProjectContext()
+
+    private val TFS_IMAGE: String = "/images/wizard/pageheader.png" //$NON-NLS-1$
 
     // 向导步骤
     private val steps = listOf(
@@ -47,6 +45,7 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
     private lateinit var stepContainer: JPanel
     private var currentStepComponent: JComponent? = null
     private lateinit var stepTitleLabel: JBLabel
+    private lateinit var stepDescriptionLabel: JBLabel
     private lateinit var previousButton: JButton
     private lateinit var nextButton: JButton
 
@@ -67,19 +66,41 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
         setOKButtonText(TfsBundle.message("ImportProjectWizard.button.import"))
         init()
         // window 在 init() 之后才可用
-        window?.minimumSize = Dimension(1024, 768)
+        window?.minimumSize = Dimension(750, 525)
         context.uiContext = UIContext.of(project, window)
+    }
+
+    override fun getPreferredSize(): Dimension {
+        return Dimension(750, 525)
     }
 
     override fun createCenterPanel(): JComponent {
         contentPanel = JPanel(BorderLayout())
 
-        // 顶部步骤标题
+        // 顶部步骤标题和描述
+        val headerPanel = JPanel(BorderLayout())
+        headerPanel.border = JBUI.Borders.emptyBottom(10)
+
+        // 左侧：标题和描述
+        val textPanel = JPanel(BorderLayout())
         stepTitleLabel = JBLabel().apply {
             font = font.deriveFont(Font.BOLD, 14f)
-            border = JBUI.Borders.emptyBottom(10)
         }
-        contentPanel.add(stepTitleLabel, BorderLayout.NORTH)
+        textPanel.add(stepTitleLabel, BorderLayout.NORTH)
+        stepDescriptionLabel = JBLabel().apply {
+            foreground = JBColor.gray
+            border = JBUI.Borders.emptyTop(2)
+        }
+        textPanel.add(stepDescriptionLabel, BorderLayout.CENTER)
+        headerPanel.add(textPanel, BorderLayout.CENTER)
+
+        // 右侧：图片
+        val iconUrl = javaClass.getResource(TFS_IMAGE)
+        if (iconUrl != null) {
+            headerPanel.add(JLabel(ImageIcon(iconUrl)), BorderLayout.EAST)
+        }
+
+        contentPanel.add(headerPanel, BorderLayout.NORTH)
 
         // 步骤内容容器
         stepContainer = JPanel(BorderLayout())
@@ -164,6 +185,9 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
 
         // 更新步骤标题
         stepTitleLabel.text = TfsBundle.message("ImportProjectWizard.step.progress", currentStepIndex + 1, steps.size, step.title ?: "")
+
+        // 更新步骤描述
+        stepDescriptionLabel.text = step.description ?: ""
 
         // 更新按钮状态
         updateButtonState()

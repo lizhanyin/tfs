@@ -2,12 +2,17 @@ package com.github.lizhanyin.tfs.client.ui.wizard;
 
 import com.github.lizhanyin.tfs.client.commands.CreateWorkspaceCommand;
 import com.github.lizhanyin.tfs.client.commands.QueryLocalWorkspacesCommand;
+import com.github.lizhanyin.tfs.client.framework.command.CommandExecutor;
+import com.github.lizhanyin.tfs.client.framework.command.ICommandExecutor;
 import com.github.lizhanyin.tfs.runtime.IStatus;
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext;
 import com.microsoft.tfs.core.TFSTeamProjectCollection;
+import com.microsoft.tfs.core.clients.versioncontrol.WorkspaceLocation;
 import com.microsoft.tfs.core.clients.versioncontrol.WorkspacePermissionProfile;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
 import com.microsoft.tfs.jni.helpers.LocalHost;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class WizardWorkspacePage extends ExtendedWizardPage{
 
@@ -74,4 +79,27 @@ public class WizardWorkspacePage extends ExtendedWizardPage{
         return workspaces;
     }
 
+    public Workspace addWorkspace(
+            @NotNull String name,
+            @Nullable String comment,
+            @NotNull WorkspaceLocation location,
+            @NotNull WorkspacePermissionProfile permissionProfile
+    ) throws Exception {
+        final TFSTeamProjectCollection connection = context.getCollection().getCollection();
+        final CreateWorkspaceCommand command = new CreateWorkspaceCommand(
+                connection,
+                null, // workingFolders - 创建时无映射
+                name,
+                comment,
+                location,
+                null, // options - 使用默认
+                permissionProfile);
+
+        final ICommandExecutor executor = new CommandExecutor();
+        final IStatus status = executor.execute(command);
+        if (!status.isOK()) {
+            throw new Exception("创建工作区失败: " + status.getMessage());
+        }
+        return command.getWorkspace();
+    }
 }
