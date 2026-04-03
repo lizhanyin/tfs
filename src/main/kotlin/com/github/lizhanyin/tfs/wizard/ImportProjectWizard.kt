@@ -68,6 +68,14 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
         // window 在 init() 之后才可用
         window?.minimumSize = Dimension(750, 525)
         context.uiContext = UIContext.of(project, window)
+        context.wizardController = object : ImportProjectContext.WizardController {
+            override fun showProgress(text: String) {
+                SwingUtilities.invokeLater { showConnectingProgress(text) }
+            }
+            override fun hideProgress() {
+                SwingUtilities.invokeLater { hideConnectingProgress() }
+            }
+        }
     }
 
     override fun getPreferredSize(): Dimension {
@@ -381,8 +389,8 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
         }
     }
 
-    private fun showConnectingProgress() {
-        progressLabel.text = "连接服务器中..."
+    private fun showConnectingProgress(text: String = "连接服务器中...") {
+        progressLabel.text = text
         progressPanel.isVisible = true
         previousButton.isEnabled = false
         nextButton.isEnabled = false

@@ -261,9 +261,12 @@ class CollectionSelectionStep(context: ImportProjectContext) :
      * 加载团队项目列表（进入步骤时自动调用）
      */
     fun loadTeamProjects() {
+        context.wizardController?.showProgress("正在加载团队项目...");
+
         if (!context.isServerConfigured()) {
             statusLabel.text = TfsBundle.message("CollectionSelectionStep.error.configureServerFirst")
             statusLabel.foreground = JBColor.RED
+            context.wizardController?.hideProgress()
             return
         }
 
@@ -310,13 +313,13 @@ class CollectionSelectionStep(context: ImportProjectContext) :
 
                 } catch (e: Exception) {
                     SwingUtilities.invokeLater {
-                        statusLabel.text = TfsBundle.message(
-                            "CollectionSelectionStep.error.loadingFailed", e.message ?: ""
-                        )
+                        statusLabel.text = TfsBundle.message("CollectionSelectionStep.error.loadingFailed", e.message ?: "")
                         statusLabel.foreground = JBColor.RED
                         table.isEnabled = true
                         filterField.isEnabled = true
                     }
+                } finally {
+                    context.wizardController?.hideProgress()
                 }
             }
         })

@@ -13,8 +13,17 @@ import java.net.URI
  */
 class ImportProjectContext {
 
+    /**
+     * 向导控制器接口，供步骤控制向导的进度条等
+     */
+    interface WizardController {
+        fun showProgress(text: String)
+        fun hideProgress()
+    }
+
     // UI 上下文（类似 SWT Shell）
     var uiContext: UIContext = UIContext(null)
+    var wizardController: WizardController? = null
     var tfsConn : TFSConnection? = null
     // 服务器信息
     var serverUrl: String? = null
