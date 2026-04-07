@@ -1,7 +1,7 @@
 package com.github.lizhanyin.tfs.client.ui.wizard;
 
-import com.github.lizhanyin.tfs.client.Messages;
 import com.github.lizhanyin.tfs.client.commands.CreateWorkspaceCommand;
+import com.github.lizhanyin.tfs.client.commands.DeleteWorkspaceCommand;
 import com.github.lizhanyin.tfs.client.commands.QueryLocalWorkspacesCommand;
 import com.github.lizhanyin.tfs.client.commands.UpdateWorkspaceCommand;
 import com.github.lizhanyin.tfs.client.ui.controls.workspaces.WorkspaceData;
@@ -77,7 +77,7 @@ public class WizardWorkspacePage extends ExtendedWizardPage{
 
     public Workspace updateWorkspace(@NotNull WorkspaceData dataToEdit,
                                      @NotNull WorkspaceData oldData,
-                                     @NotNull Workspace workspace) throws Exception {
+                                     @NotNull Workspace workspace) {
 
         final UpdateWorkspaceCommand command = new UpdateWorkspaceCommand(
                 workspace,
@@ -144,6 +144,15 @@ public class WizardWorkspacePage extends ExtendedWizardPage{
 //                }
             }
         }
-        return null;
+        return workspace;
+    }
+
+    public boolean deleteWorkspace(@NotNull Workspace workspace) {
+        var commandExecutor = getCommandExecutor();
+        final DeleteWorkspaceCommand command = new DeleteWorkspaceCommand(workspace);
+
+        final IStatus status = commandExecutor.execute(command);
+
+        return status.isOK();
     }
 }

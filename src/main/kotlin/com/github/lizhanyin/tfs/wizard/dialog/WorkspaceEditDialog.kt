@@ -168,8 +168,6 @@ class WorkspaceEditDialog(
     private fun fillExistingData() {
         val ws = workspaceData.workspaceDetails
         nameField.text = ws.name
-        nameField.isEnabled = !isAdd // 编辑模式不可改名称
-
         serverField.text = ws.server
         ownerField.text = ws.owner
         computerField.text = ws.computer
@@ -220,7 +218,7 @@ class WorkspaceEditDialog(
         if (isAdd){
             createdWorkspace = connectionService.createWorkspace(context, workspaceData)
         } else {
-            createdWorkspace = connectionService.updateWorkspace(context, workspaceData, oldWorkspaceData, workspace)
+            workspace?.let { connectionService.updateWorkspace(context, workspaceData, oldWorkspaceData, it) }
         }
 
         super.doOKAction()

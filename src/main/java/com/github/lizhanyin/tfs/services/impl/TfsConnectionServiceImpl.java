@@ -116,14 +116,8 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
     // ==================== 删除工作区 ====================
 
     @Override
-    public void deleteWorkspace(@NotNull ImportProjectContext context, @NotNull Workspace workspace) throws Exception {
-        TFSTeamProjectCollection tpc = null;
-        try {
-            tpc = smartConnect(context);
-            tpc.getVersionControlClient().deleteWorkspace(workspace);
-        } finally {
-            closeConnection(tpc);
-        }
+    public boolean deleteWorkspace(@NotNull ImportProjectContext context, @NotNull Workspace workspace) throws Exception {
+        return new WizardWorkspacePage(context).deleteWorkspace(workspace);
     }
 
     // ==================== 获取子项目 ====================
@@ -172,17 +166,6 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
     }
 
     /**
-     * 从存储的配置智能连接到 TFS 服务器
-     */
-    @Deprecated
-    private @NotNull TFSTeamProjectCollection smartConnectFromConfig(@NotNull TfsServerConfiguration.ServerConfig serverConfig) throws Exception {
-        Credentials credentials = createCredentialsFromConfig(serverConfig);
-        List<String> urlsToTry = getUrlsFromConfig(serverConfig);
-
-        return doSmartConnect(urlsToTry, credentials);
-    }
-
-    /**
      * 执行智能连接
      */
     private TFSTeamProjectCollection doSmartConnect(List<String> urlsToTry, Credentials credentials) throws Exception {
@@ -225,30 +208,6 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
             urlsToTry.add(serverUrl + "/" + context.getCollection().getCollectionName());
         }
 
-        return urlsToTry;
-    }
-
-    @Deprecated
-    private static @NotNull List<String> getUrlsFromConfig(@NotNull TfsServerConfiguration.ServerConfig serverConfig) {
-        String serverUrl = serverConfig.getUrl();
-
-        if (serverUrl.isEmpty()) {
-            throw new IllegalArgumentException("服务器 URL 不能为空");
-        }
-
-        serverUrl = serverUrl.replaceAll("/$", "");
-        List<String> urlsToTry = new ArrayList<>();
-
-        urlsToTry.add(serverUrl);
-
-        String collection = serverConfig.getCollection();
-        if (!collection.isEmpty()) {
-            urlsToTry.add(serverUrl + "/" + collection);
-        }
-
-        if (!"DefaultCollection".equals(collection)) {
-            urlsToTry.add(serverUrl + "/DefaultCollection");
-        }
         return urlsToTry;
     }
 

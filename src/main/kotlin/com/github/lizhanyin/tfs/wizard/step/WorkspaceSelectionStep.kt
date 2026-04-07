@@ -200,12 +200,13 @@ class WorkspaceSelectionStep(context: ImportProjectContext) :
 
     private fun editWorkspace() {
         val selected = tableModel.getSelectedItem() ?: return
+        val selectedName = selected.name
 
         val parentWindow = SwingUtilities.getWindowAncestor(table)
         val workspaceData = WorkspaceData(selected)
         val dialog = WorkspaceEditDialog(parentWindow, context, false, workspaceData, selected)
         if (dialog.showAndGet()) {
-            loadWorkspaces()
+            loadWorkspaces(selectedName)
         }
     }
 
@@ -244,7 +245,7 @@ class WorkspaceSelectionStep(context: ImportProjectContext) :
 
     // ==================== 数据加载 ====================
 
-    fun loadWorkspaces() {
+    fun loadWorkspaces(selectWorkspaceName: String? = null) {
         if (!context.isServerConfigured()) {
             Messages.showErrorDialog(
                 TfsBundle.message("CollectionSelectionStep.error.configureServerFirst"),
@@ -276,15 +277,22 @@ class WorkspaceSelectionStep(context: ImportProjectContext) :
                             statusLabel.text = TfsBundle.message("WorkspaceSelectionStep.status.noResults")
                             statusLabel.foreground = JBColor.ORANGE
                         } else {
-                            statusLabel.text = TfsBundle.message(
-                                "WorkspaceSelectionStep.status.loaded", workspaces.size
-                            )
+                            statusLabel.text = TfsBundle.message("WorkspaceSelectionStep.status.loaded", workspaces.size)
                             statusLabel.foreground = JBColor.GRAY
                         }
 
                         table.isEnabled = true
                         if (table.rowCount > 0) {
-                            table.setRowSelectionInterval(0, 0)
+                            if (selectWorkspaceName != null) {
+                                val row = workspaces.indexOfFirst { it.name == selectWorkspaceName }
+                                if (row >= 0) {
+                                    table.setRowSelectionInterval(row, row)
+                                } else {
+                                    table.setRowSelectionInterval(0, 0)
+                                }
+                            } else {
+                                table.setRowSelectionInterval(0, 0)
+                            }
                         }
                     }
                 } catch (e: Exception) {

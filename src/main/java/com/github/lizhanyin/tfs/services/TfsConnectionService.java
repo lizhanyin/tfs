@@ -4,13 +4,8 @@ import com.github.lizhanyin.tfs.client.catalog.CrossCollectionProjectInfo;
 import com.github.lizhanyin.tfs.client.ui.controls.workspaces.WorkspaceData;
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext;
 import com.microsoft.tfs.core.TFSConnection;
-import com.microsoft.tfs.core.clients.versioncontrol.WorkspaceLocation;
-import com.microsoft.tfs.core.clients.versioncontrol.WorkspaceOptions;
-import com.microsoft.tfs.core.clients.versioncontrol.WorkspacePermissionProfile;
-import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkingFolder;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -83,7 +78,7 @@ public interface TfsConnectionService {
      * @param workspace 要删除的工作区
      * @throws Exception 如果删除失败
      */
-    void deleteWorkspace(@NotNull ImportProjectContext context, @NotNull Workspace workspace) throws Exception;
+    boolean deleteWorkspace(@NotNull ImportProjectContext context, @NotNull Workspace workspace) throws Exception;
 
     /**
      * 获取团队项目列表
