@@ -1,9 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See License.txt in the repository root.
 
-package com.github.lizhanyin.tfs.client.commands;
+package com.github.lizhanyin.tfs.client.commands.wizard;
 
 import com.github.lizhanyin.tfs.client.Messages;
+import com.github.lizhanyin.tfs.client.commands.TFSConnectedCommand;
 import com.github.lizhanyin.tfs.runtime.IStatus;
 import com.github.lizhanyin.tfs.runtime.Status;
 import com.intellij.openapi.progress.ProgressIndicator;

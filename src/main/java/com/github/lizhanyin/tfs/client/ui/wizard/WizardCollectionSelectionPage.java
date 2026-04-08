@@ -2,8 +2,8 @@ package com.github.lizhanyin.tfs.client.ui.wizard;
 
 import com.github.lizhanyin.tfs.client.catalog.CrossCollectionProjectInfo;
 import com.github.lizhanyin.tfs.client.catalog.TeamProjectCollectionInfo;
-import com.github.lizhanyin.tfs.client.commands.QueryProjectCollectionsCommand;
-import com.github.lizhanyin.tfs.client.commands.QueryTeamProjectsCommand;
+import com.github.lizhanyin.tfs.client.commands.wizard.QueryProjectCollectionsCommand;
+import com.github.lizhanyin.tfs.client.commands.wizard.QueryTeamProjectsCommand;
 import com.github.lizhanyin.tfs.client.framework.command.ThreadedCancellableCommand;
 import com.github.lizhanyin.tfs.runtime.IStatus;
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext;

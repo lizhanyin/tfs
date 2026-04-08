@@ -1,9 +1,9 @@
 package com.github.lizhanyin.tfs.client.ui.wizard;
 
-import com.github.lizhanyin.tfs.client.commands.CreateWorkspaceCommand;
-import com.github.lizhanyin.tfs.client.commands.DeleteWorkspaceCommand;
-import com.github.lizhanyin.tfs.client.commands.QueryLocalWorkspacesCommand;
-import com.github.lizhanyin.tfs.client.commands.UpdateWorkspaceCommand;
+import com.github.lizhanyin.tfs.client.commands.wizard.CreateWorkspaceCommand;
+import com.github.lizhanyin.tfs.client.commands.wizard.DeleteWorkspaceCommand;
+import com.github.lizhanyin.tfs.client.commands.wizard.QueryLocalWorkspacesCommand;
+import com.github.lizhanyin.tfs.client.commands.wizard.UpdateWorkspaceCommand;
 import com.github.lizhanyin.tfs.client.ui.controls.workspaces.WorkspaceData;
 import com.github.lizhanyin.tfs.runtime.IStatus;
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext;

@@ -4,20 +4,18 @@ import com.github.lizhanyin.tfs.TfsBundle
 import com.github.lizhanyin.tfs.services.TfsConnectionService
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
-import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.ui.CheckboxTree
 import com.intellij.ui.CheckedTreeNode
 import com.intellij.ui.JBColor
+import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.FormBuilder
 import com.intellij.util.ui.JBUI
 import java.awt.BorderLayout
-import java.awt.Color
 import java.awt.Dimension
 import javax.swing.JButton
 import javax.swing.JComponent
@@ -28,10 +26,26 @@ import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.TreeNode
 
 /**
- * 项目选择步骤
+ * 项目选择步骤（第四步）
+ *
+ * UI 布局（参考 CLAUDE.md）：
+ * ------------------------------------------
+ * |  项目选择                                |
+ * |    从 Team Foundation Server 导入项目    |
+ * |----------------------------------------|
+ * | 导入项目:                                |
+ * | [tree] (ip\集合名称）                    |
+ * |    root  (项目名）                       |
+ * |      文件夹1                            |
+ * |      文件夹2                            |
+ * | [label] (已选择 {0} 个项目)              |
+ * | [checkbox] 对选定项目中的文件执行强制获取  |
+ * |----------------------------------------|
+ * | [上一步] [下一步]  [完成](禁用) [放弃]    |
+ * ------------------------------------------
  */
 class ProjectSelectionStep(context: ImportProjectContext) :
-    AbstractWizardStep(STEP_ID, TfsBundle.message("ProjectSelectionStep.title"), context) {
+    AbstractWizardStep(STEP_ID, TfsBundle.message("ProjectSelectionStep.title"), context, TfsBundle.message("ProjectSelectionStep.description")) {
 
     companion object {
         private const val STEP_ID = "project-selection"
@@ -39,64 +53,74 @@ class ProjectSelectionStep(context: ImportProjectContext) :
 
     private lateinit var projectTree: CheckboxTree
     private lateinit var rootTreeNode: CheckedTreeNode
-    private lateinit var localPathField: TextFieldWithBrowseButton
+    private lateinit var selectedCountLabel: JBLabel
+    private lateinit var forceGetCheckbox: JBCheckBox
     private lateinit var statusLabel: JBLabel
     private lateinit var refreshButton: JButton
 
     private val projects = mutableListOf<ProjectItem>()
 
     override fun buildComponent(): JComponent {
-        val builder = FormBuilder.createFormBuilder()
+        val contentPanel = JPanel(BorderLayout(0, JBUI.scale(8)))
+        contentPanel.border = JBUI.Borders.empty(10)
 
-        // 本地路径选择
-        localPathField = TextFieldWithBrowseButton()
-        localPathField.text = context.localPath ?: System.getProperty("user.home")
-        localPathField.addBrowseFolderListener(
-            null,
-            FileChooserDescriptorFactory.createSingleFolderDescriptor()
-        )
-        builder.addLabeledComponent(TfsBundle.message("ProjectSelectionStep.label.localPath"), localPathField)
+        // 中间：项目树 + 状态
+        contentPanel.add(createTreePanel(), BorderLayout.CENTER)
 
-        builder.addSeparator()
+        // 底部：选择计数 + 强制获取复选框
+        contentPanel.add(createBottomPanel(), BorderLayout.SOUTH)
 
-        // 项目树标签
+        // 初始加载
+        loadProjects()
+
+        return contentPanel
+    }
+
+    // ==================== UI 构建 ====================
+
+    private fun createTreePanel(): JComponent {
+        val panel = JPanel(BorderLayout(0, JBUI.scale(4)))
+
+        // 树标题 + 刷新按钮
         val headerPanel = JPanel(BorderLayout())
         headerPanel.add(JBLabel(TfsBundle.message("ProjectSelectionStep.label.selectProjects")), BorderLayout.WEST)
 
         refreshButton = JButton(TfsBundle.message("ProjectSelectionStep.button.refresh"))
         refreshButton.addActionListener { loadProjects() }
         headerPanel.add(refreshButton, BorderLayout.EAST)
-
-        builder.addComponent(headerPanel)
+        panel.add(headerPanel, BorderLayout.NORTH)
 
         // 创建项目树
         createProjectTree()
         val treeScrollPane = JBScrollPane(projectTree)
-        treeScrollPane.preferredSize = Dimension(400, 300)
-        builder.addComponentFillVertically(treeScrollPane, 0)
-
-        builder.addSeparator()
+        treeScrollPane.preferredSize = Dimension(500, 300)
+        panel.add(treeScrollPane, BorderLayout.CENTER)
 
         // 状态标签
         statusLabel = JBLabel(TfsBundle.message("ProjectSelectionStep.status.loading"))
-        builder.addComponent(statusLabel)
-
-        val panel = builder.panel
-        panel.border = JBUI.Borders.empty(10)
-
-        // 初始加载
-        loadProjects()
+        statusLabel.foreground = JBColor.gray
+        panel.add(statusLabel, BorderLayout.SOUTH)
 
         return panel
     }
 
-    /**
-     * 创建项目树
-     */
+    private fun createBottomPanel(): JComponent {
+        val panel = JPanel(BorderLayout())
+        panel.border = JBUI.Borders.emptyTop(8)
+
+        selectedCountLabel = JBLabel(TfsBundle.message("ProjectSelectionStep.status.selectedNone"))
+        panel.add(selectedCountLabel, BorderLayout.WEST)
+
+        forceGetCheckbox = JBCheckBox(TfsBundle.message("ProjectSelectionStep.checkbox.forceGet"))
+        panel.add(forceGetCheckbox, BorderLayout.EAST)
+
+        return panel
+    }
+
     private fun createProjectTree() {
         rootTreeNode = CheckedTreeNode(null)
 
-        projectTree = CheckboxTree(
+        projectTree = object : CheckboxTree(
             object : CheckboxTree.CheckboxTreeCellRenderer() {
                 fun customizeCellRenderer(
                     tree: JTree,
@@ -115,14 +139,18 @@ class ProjectSelectionStep(context: ImportProjectContext) :
                     }
                 }
             }, rootTreeNode
-        )
+        ) {
+            override fun onNodeStateChanged(node: CheckedTreeNode) {
+                super.onNodeStateChanged(node)
+                updateSelectedCount()
+            }
+        }
         projectTree.isRootVisible = false
         projectTree.setShowsRootHandles(true)
     }
 
-    /**
-     * 加载项目列表
-     */
+    // ==================== 数据加载 ====================
+
     private fun loadProjects() {
         if (!context.isTeamProjectSelected()) {
             statusLabel.text = TfsBundle.message("ProjectSelectionStep.error.selectTeamProjectFirst")
@@ -131,7 +159,7 @@ class ProjectSelectionStep(context: ImportProjectContext) :
         }
 
         statusLabel.text = TfsBundle.message("ProjectSelectionStep.status.loading")
-        statusLabel.foreground = Color.BLACK
+        statusLabel.foreground = JBColor.gray
         refreshButton.isEnabled = false
 
         ProgressManager.getInstance().run(object : Task.Backgroundable(null, TfsBundle.message("ProjectSelectionStep.progress.loading"), false) {
@@ -143,36 +171,37 @@ class ProjectSelectionStep(context: ImportProjectContext) :
                     val connectionService = ApplicationManager.getApplication().getService(TfsConnectionService::class.java)
                     val teamProject = context.collection ?: return
 
-//                    val serverItems = connectionService.getProjectItems(context, teamProject)
-//
-//                    // 转换为本地项目项
-//                    val projectItems = mutableListOf<ProjectItem>()
-//                    for (item in serverItems) {
-//                        if (item.isFolder) {
-//                            val projectItem = ProjectItem(item.serverPath, item.name)
-//                            // 如果是文件夹，递归加载子项
-//                            loadChildren(projectItem, connectionService, indicator)
-//                            projectItems.add(projectItem)
-//                        }
-//                    }
+                    // 团队项目的服务器路径，格式: $/项目名
+                    val projectServerPath = "\$/${teamProject.name}"
 
-                    // 更新 UI
-//                    SwingUtilities.invokeLater {
-//                        projects.clear()
-//                        projects.addAll(projectItems)
-//                        buildProjectTree()
-//
-//                        val itemCount = countLeafNodes(rootTreeNode)
-//                        if (itemCount == 0) {
-//                            statusLabel.text = TfsBundle.message("ProjectSelectionStep.status.noResults")
-//                            statusLabel.foreground = JBColor.ORANGE
-//                        } else {
-//                            statusLabel.text = TfsBundle.message("ProjectSelectionStep.status.loaded", itemCount)
-//                            statusLabel.foreground = Color(0, 128, 0)
-//                        }
-//                        refreshButton.isEnabled = true
-//                    }
+                    val projectItems = mutableListOf<ProjectItem>()
 
+                    // 加载项目根目录下的子项
+                    val children = connectionService.getChildItems(context, projectServerPath)
+                    for (child in children) {
+                        if (child.isFolder) {
+                            val childItem = ProjectItem(child.serverPath, child.name)
+                            // 递归加载子文件夹（限制深度）
+                            loadChildren(childItem, connectionService, indicator, projectServerPath)
+                            projectItems.add(childItem)
+                        }
+                    }
+
+                    SwingUtilities.invokeLater {
+                        projects.clear()
+                        projects.addAll(projectItems)
+                        buildProjectTree()
+
+                        if (projects.isEmpty()) {
+                            statusLabel.text = TfsBundle.message("ProjectSelectionStep.status.noResults")
+                            statusLabel.foreground = JBColor.ORANGE
+                        } else {
+                            statusLabel.text = TfsBundle.message("ProjectSelectionStep.status.loaded", projects.size)
+                            statusLabel.foreground = JBColor.GRAY
+                        }
+                        refreshButton.isEnabled = true
+                        updateSelectedCount()
+                    }
                 } catch (e: Exception) {
                     SwingUtilities.invokeLater {
                         statusLabel.text = TfsBundle.message("ProjectSelectionStep.error.loadingFailed", e.message ?: "")
@@ -184,14 +213,14 @@ class ProjectSelectionStep(context: ImportProjectContext) :
         })
     }
 
-    /**
-     * 递归加载子项
-     */
     private fun loadChildren(
         parent: ProjectItem,
         connectionService: TfsConnectionService,
-        indicator: ProgressIndicator
+        indicator: ProgressIndicator,
+        rootPath: String
     ) {
+        if (indicator.isCanceled) return
+
         try {
             val children = connectionService.getChildItems(context, parent.serverPath)
 
@@ -199,20 +228,20 @@ class ProjectSelectionStep(context: ImportProjectContext) :
                 if (child.isFolder) {
                     val childItem = ProjectItem(child.serverPath, child.name)
                     parent.addChild(childItem)
-                    // 限制递归深度
-                    if (parent.serverPath.split("/").size < 6) {
-                        loadChildren(childItem, connectionService, indicator)
+                    // 限制递归深度（相对于根路径最多 4 层）
+                    val depth = child.serverPath.removePrefix(rootPath).count { it == '/' }
+                    if (depth < 4) {
+                        loadChildren(childItem, connectionService, indicator, rootPath)
                     }
                 }
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // 忽略单个文件夹加载失败
         }
     }
 
-    /**
-     * 构建项目树
-     */
+    // ==================== 树操作 ====================
+
     private fun buildProjectTree() {
         rootTreeNode.removeAllChildren()
 
@@ -224,9 +253,6 @@ class ProjectSelectionStep(context: ImportProjectContext) :
         (projectTree.model as DefaultTreeModel).reload()
     }
 
-    /**
-     * 创建树节点
-     */
     private fun createTreeNode(item: ProjectItem): CheckedTreeNode {
         val node = CheckedTreeNode(item)
 
@@ -237,35 +263,25 @@ class ProjectSelectionStep(context: ImportProjectContext) :
         return node
     }
 
-    /**
-     * 统计叶子节点数量
-     */
-    private fun countLeafNodes(node: TreeNode): Int {
-        if (node.isLeaf) {
-            return 1
+    private fun updateSelectedCount() {
+        val count = getSelectedPaths().size
+        selectedCountLabel.text = if (count == 0) {
+            TfsBundle.message("ProjectSelectionStep.status.selectedNone")
+        } else {
+            TfsBundle.message("ProjectSelectionStep.status.selectedCount", count)
         }
-
-        var count = 0
-        for (i in 0 until node.childCount) {
-            count += countLeafNodes(node.getChildAt(i))
-        }
-        return count
     }
 
-    /**
-     * 获取选中的项目路径
-     */
+    // ==================== 选择相关 ====================
+
     private fun getSelectedPaths(): List<String> {
         val paths = mutableListOf<String>()
         collectCheckedPaths(rootTreeNode, paths)
         return paths
     }
 
-    /**
-     * 递归收集选中的路径
-     */
     private fun collectCheckedPaths(node: CheckedTreeNode, paths: MutableList<String>) {
-        if (node.isLeaf && node.isChecked) {
+        if (node.isChecked) {
             val userObject = node.userObject
             if (userObject is ProjectItem) {
                 paths.add(userObject.serverPath)
@@ -280,10 +296,9 @@ class ProjectSelectionStep(context: ImportProjectContext) :
         }
     }
 
-    override fun isComplete(): Boolean {
-        val selected = getSelectedPaths()
-        return selected.isNotEmpty() && localPathField.text.isNotEmpty()
-    }
+    // ==================== 步骤接口 ====================
+
+    override fun isComplete(): Boolean = getSelectedPaths().isNotEmpty()
 
     override fun getPreferredFocusedComponent(): JComponent = projectTree
 
@@ -291,7 +306,7 @@ class ProjectSelectionStep(context: ImportProjectContext) :
         val selectedPaths = getSelectedPaths()
         context.selectedProjects.clear()
         context.selectedProjects.addAll(selectedPaths)
-        context.localPath = localPathField.text
+        context.forceGetLatest = forceGetCheckbox.isSelected
         return true
     }
 

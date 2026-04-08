@@ -1,11 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See License.txt in the repository root.
 
-package com.github.lizhanyin.tfs.client.commands;
+package com.github.lizhanyin.tfs.client.commands.wizard;
 
 import java.text.MessageFormat;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.github.lizhanyin.tfs.client.commands.TFSConnectedCommand;
 import com.intellij.openapi.progress.ProgressIndicator;
 
 import com.github.lizhanyin.tfs.client.Messages;

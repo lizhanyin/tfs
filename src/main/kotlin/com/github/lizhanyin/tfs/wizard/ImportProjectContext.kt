@@ -45,6 +45,9 @@ class ImportProjectContext {
     // 本地路径
     var localPath: String? = null
 
+    // 强制获取最新
+    var forceGetLatest: Boolean = false
+
     /**
      * 获取完整的集合 URL
      */
