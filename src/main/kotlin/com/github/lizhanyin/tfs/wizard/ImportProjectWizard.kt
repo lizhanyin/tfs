@@ -4,6 +4,7 @@ import com.github.lizhanyin.tfs.TfsBundle
 import com.github.lizhanyin.tfs.client.ui.framework.UIContext
 import com.github.lizhanyin.tfs.services.TfsConnectionService
 import com.github.lizhanyin.tfs.wizard.step.CollectionSelectionStep
+import com.github.lizhanyin.tfs.wizard.step.ConfirmationStep
 import com.github.lizhanyin.tfs.wizard.step.ProjectSelectionStep
 import com.github.lizhanyin.tfs.wizard.step.ServerSelectionStep
 import com.github.lizhanyin.tfs.wizard.step.WorkspaceSelectionStep
@@ -37,7 +38,8 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
         ServerSelectionStep(context),
         CollectionSelectionStep(context),
         WorkspaceSelectionStep(context),
-        ProjectSelectionStep(context)
+        ProjectSelectionStep(context),
+        ConfirmationStep(context)
     )
     private var currentStepIndex = 0
 
