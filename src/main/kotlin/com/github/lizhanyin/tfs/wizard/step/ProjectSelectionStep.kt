@@ -157,7 +157,7 @@ class ProjectSelectionStep(context: ImportProjectContext) :
             label
         }
 
-        projectTree.addTreeSelectionListener(TreeSelectionListener { updateSelectedCount() })
+        projectTree.addTreeSelectionListener(TreeSelectionListener { validateSelection() })
 
         // 展开事件：懒加载子节点
         projectTree.addTreeExpansionListener(object : TreeExpansionListener {
@@ -185,17 +185,28 @@ class ProjectSelectionStep(context: ImportProjectContext) :
         })
     }
 
+    private fun cleanStatus(){
+        showStatus(JBColor.gray, null)
+    }
+
+    private fun showStatus(color: JBColor, key: String?, vararg params: Any){
+        if (key == null) {
+            statusLabel.text = ""
+        } else {
+            val text = TfsBundle.message(key, *params)
+            statusLabel.text = "<html><body style='width:480px'>$text</body></html>"
+        }
+        statusLabel.foreground = color
+    }
+
     // ==================== 数据加载 ====================
 
     private fun loadProjects() {
         if (!context.isTeamProjectSelected()) {
-            statusLabel.text = TfsBundle.message("ProjectSelectionStep.error.selectTeamProjectFirst")
-            statusLabel.foreground = JBColor.RED
+            showStatus(JBColor.RED, "ProjectSelectionStep.error.selectTeamProjectFirst")
             return
         }
-
-        statusLabel.text = TfsBundle.message("ProjectSelectionStep.status.loading")
-        statusLabel.foreground = JBColor.gray
+        showStatus(JBColor.gray, "ProjectSelectionStep.status.loading")
         refreshButton.isEnabled = false
 
         ProgressManager.getInstance().run(object : Task.Backgroundable(null, TfsBundle.message("ProjectSelectionStep.progress.loading"), false) {
@@ -233,11 +244,9 @@ class ProjectSelectionStep(context: ImportProjectContext) :
                         buildProjectTree()
 
                         if (projects.isEmpty()) {
-                            statusLabel.text = TfsBundle.message("ProjectSelectionStep.status.noResults")
-                            statusLabel.foreground = JBColor.ORANGE
+                            showStatus(JBColor.ORANGE, "ProjectSelectionStep.status.noResults")
                         } else {
-                            statusLabel.text = TfsBundle.message("ProjectSelectionStep.status.loaded", projects.size)
-                            statusLabel.foreground = JBColor.GRAY
+                            showStatus(JBColor.GRAY, "ProjectSelectionStep.status.loaded", projects.size)
                         }
                         refreshButton.isEnabled = true
                         updateSelectedCount()
@@ -344,11 +353,71 @@ class ProjectSelectionStep(context: ImportProjectContext) :
 
     // ==================== 选择相关 ====================
 
+    private var validating = false
+
+    private fun validateSelection() {
+        cleanStatus()
+
+        if (validating) return
+        validating = true
+        try {
+            val selectionPaths = projectTree.selectionPaths ?: run {
+                updateSelectedCount()
+                return
+            }
+
+            val pathsToKeep = selectionPaths.toMutableList()
+            var error: Boolean = false
+
+            // 检查1: 不能选择根节点
+            val iter = pathsToKeep.iterator()
+            while (iter.hasNext()) {
+                val item = getProjectItem(iter.next())
+                if (item != null && item.node.type == ServerItemType.ROOT) {
+                    showStatus(JBColor.RED, "ImportFolderValidator.CannotImportServerRoot")
+                    error = true
+                }
+            }
+
+            // 检查2: 已选节点的祖先不能被选中
+            if (!error && pathsToKeep.size > 1) {
+                val toRemove = mutableSetOf<TreePath>()
+                for (i in pathsToKeep.indices) {
+                    for (j in pathsToKeep.indices) {
+                        if (i == j || toRemove.contains(pathsToKeep[i])) continue
+                        // pathsToKeep[i] 是 pathsToKeep[j] 的祖先，需要移除
+                        if (pathsToKeep[i].isDescendant(pathsToKeep[j])) {
+                            toRemove.add(pathsToKeep[i])
+                        }
+                    }
+                }
+                if (toRemove.isNotEmpty()) {
+                    val ancestorItem = getProjectItem(toRemove.first())
+                    showStatus(JBColor.RED, "ImportFolderCollection.SelectedPathIsAncestorFormat", ancestorItem?.node?.serverPath ?: "", toRemove)
+                }
+            }
+
+            if (!error) {
+                projectTree.selectionPaths = pathsToKeep.toTypedArray()
+            }
+
+            updateSelectedCount()
+        } finally {
+            validating = false
+        }
+    }
+
+    private fun getProjectItem(path: TreePath): ProjectItem? {
+        val node = path.lastPathComponent as? DefaultMutableTreeNode ?: return null
+        return node.userObject as? ProjectItem
+    }
+
     private fun getSelectedPaths(): List<String> {
         return projectTree.selectionPaths?.mapNotNull { path ->
-            val node = path.lastPathComponent as? DefaultMutableTreeNode
-            val item = node?.userObject as? ProjectItem
-            item?.node?.serverPath
+            val item = getProjectItem(path)
+            if (item != null && item.node.type != ServerItemType.ROOT) {
+                item.node.serverPath
+            } else null
         } ?: emptyList()
     }
 
