@@ -14,6 +14,7 @@ import com.intellij.openapi.ui.Messages
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBUI
+import com.microsoft.tfs.core.clients.versioncontrol.SourceControlCapabilityFlags
 import org.jetbrains.annotations.Nullable
 import java.awt.*
 import javax.swing.*
@@ -68,6 +69,7 @@ class ImportProjectWizard(@field:Nullable private val project: Project?) : Dialo
         // window 在 init() 之后才可用
         window?.minimumSize = Dimension(750, 525)
         context.uiContext = UIContext.of(project, window)
+        context.sourceControlCapabilityFlags = SourceControlCapabilityFlags.TFS
         context.wizardController = object : ImportProjectContext.WizardController {
             override fun showProgress(text: String) {
                 SwingUtilities.invokeLater { showConnectingProgress(text) }

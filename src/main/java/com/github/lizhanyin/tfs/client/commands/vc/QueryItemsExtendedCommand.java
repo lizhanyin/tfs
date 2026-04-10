@@ -8,7 +8,7 @@ import java.text.MessageFormat;
 import com.intellij.openapi.progress.ProgressIndicator;
 
 import com.github.lizhanyin.tfs.client.Messages;
-import com.github.lizhanyin.tfs.client.TFSCommonClientPlugin;
+import com.github.lizhanyin.tfs.TFSClientPlugin;
 import com.github.lizhanyin.tfs.client.commands.TFSCommand;
 import com.github.lizhanyin.tfs.client.repository.TFSRepository;
 import com.github.lizhanyin.tfs.runtime.IStatus;
@@ -149,7 +149,7 @@ public class QueryItemsExtendedCommand extends TFSCommand {
         } catch (final CanceledException e) {
             return Status.CANCEL_STATUS;
         } catch (final Exception e) {
-            return new Status(IStatus.ERROR, TFSCommonClientPlugin.PLUGIN_ID, 0, e.getLocalizedMessage(), null);
+            return new Status(IStatus.ERROR, TFSClientPlugin.PLUGIN_ID, 0, e.getLocalizedMessage(), null);
         }
 
         return Status.OK_STATUS;

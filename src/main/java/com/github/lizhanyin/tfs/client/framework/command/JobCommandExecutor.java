@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 
 import com.intellij.openapi.progress.Task;
 
-import com.github.lizhanyin.tfs.client.TFSCommonClientPlugin;
+import com.github.lizhanyin.tfs.TFSClientPlugin;
 
 /**
  * <p>
@@ -146,7 +146,7 @@ public class JobCommandExecutor extends CommandExecutor {
                 new ExtensionPointAsyncObjectWaiter().joinTask(task);
             } catch (final InterruptedException e) {
                 synchronized (taskResultLock) {
-                    taskResult = new Status(Status.ERROR, TFSCommonClientPlugin.PLUGIN_ID, 0, null, e);
+                    taskResult = new Status(Status.ERROR, TFSClientPlugin.PLUGIN_ID, 0, null, e);
                 }
             }
         }

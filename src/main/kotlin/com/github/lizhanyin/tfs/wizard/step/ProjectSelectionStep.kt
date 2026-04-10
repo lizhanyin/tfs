@@ -1,29 +1,34 @@
 package com.github.lizhanyin.tfs.wizard.step
 
 import com.github.lizhanyin.tfs.TfsBundle
+import com.github.lizhanyin.tfs.client.codemarker.CodeMarker
+import com.github.lizhanyin.tfs.client.codemarker.CodeMarkerDispatch
+import com.github.lizhanyin.tfs.client.ui.vc.serveritem.TypedServerItem
 import com.github.lizhanyin.tfs.services.TfsConnectionService
+import com.github.lizhanyin.tfs.vc.serveritem.ServerItemLabelProvider
 import com.github.lizhanyin.tfs.wizard.ImportProjectContext
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
-import com.intellij.ui.CheckboxTree
-import com.intellij.ui.CheckedTreeNode
+import com.intellij.icons.AllIcons
+import com.intellij.openapi.ui.Messages
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
-import com.intellij.util.ui.FormBuilder
+import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.JBUI
 import java.awt.BorderLayout
 import java.awt.Dimension
 import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JPanel
-import javax.swing.JTree
 import javax.swing.SwingUtilities
+import javax.swing.event.TreeSelectionListener
+import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
-import javax.swing.tree.TreeNode
+import javax.swing.tree.TreeSelectionModel
 
 /**
  * 项目选择步骤（第四步）
@@ -49,14 +54,20 @@ class ProjectSelectionStep(context: ImportProjectContext) :
 
     companion object {
         private const val STEP_ID = "project-selection"
+        private val CODEMARKER_CHILD_NODES_FETCH_START =
+        CodeMarker("com.github.lizhanyin.tfs.wizard.step.ProjectSelectionStep#childNodesFetchStart"); //$NON-NLS-1$
+        private val CODEMARKER_CHILD_NODES_FETCH_COMPLETE =
+            CodeMarker("com.github.lizhanyin.tfs.wizard.step.ProjectSelectionStep#childNodesFetchComplete"); //$NON-NLS-1$
     }
 
-    private lateinit var projectTree: CheckboxTree
-    private lateinit var rootTreeNode: CheckedTreeNode
+    private lateinit var projectTree: Tree
+    private lateinit var rootTreeNode: DefaultMutableTreeNode
     private lateinit var selectedCountLabel: JBLabel
     private lateinit var forceGetCheckbox: JBCheckBox
     private lateinit var statusLabel: JBLabel
     private lateinit var refreshButton: JButton
+
+    private var labelProvider: ServerItemLabelProvider = ServerItemLabelProvider()
 
     private val projects = mutableListOf<ProjectItem>()
 
@@ -118,35 +129,25 @@ class ProjectSelectionStep(context: ImportProjectContext) :
     }
 
     private fun createProjectTree() {
-        rootTreeNode = CheckedTreeNode(null)
+        rootTreeNode = DefaultMutableTreeNode()
 
-        projectTree = object : CheckboxTree(
-            object : CheckboxTree.CheckboxTreeCellRenderer() {
-                fun customizeCellRenderer(
-                    tree: JTree,
-                    value: Any?,
-                    selected: Boolean,
-                    expanded: Boolean,
-                    leaf: Boolean,
-                    row: Int,
-                    hasFocus: Boolean
-                ) {
-                    if (value is CheckedTreeNode) {
-                        val userObject = value.userObject
-                        if (userObject is ProjectItem) {
-                            textRenderer.append(userObject.name)
-                        }
-                    }
-                }
-            }, rootTreeNode
-        ) {
-            override fun onNodeStateChanged(node: CheckedTreeNode) {
-                super.onNodeStateChanged(node)
-                updateSelectedCount()
-            }
-        }
+        projectTree = Tree(rootTreeNode)
         projectTree.isRootVisible = false
         projectTree.setShowsRootHandles(true)
+        projectTree.selectionModel.selectionMode = TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION
+        projectTree.setCellRenderer { tree, value, selected, expanded, leaf, row, hasFocus ->
+            val label = javax.swing.JLabel()
+            if (value is DefaultMutableTreeNode) {
+                val userObject = value.userObject
+                if (userObject is ProjectItem) {
+                    label.icon = labelProvider.getImage(userObject.node)
+                    label.text = labelProvider.getText(userObject.node)
+                }
+            }
+            label
+        }
+
+        projectTree.addTreeSelectionListener(TreeSelectionListener { updateSelectedCount() })
     }
 
     // ==================== 数据加载 ====================
@@ -168,24 +169,27 @@ class ProjectSelectionStep(context: ImportProjectContext) :
                 indicator.isIndeterminate = true
 
                 try {
-                    val connectionService = ApplicationManager.getApplication().getService(TfsConnectionService::class.java)
-                    val teamProject = context.collection ?: return
-
-                    // 团队项目的服务器路径，格式: $/项目名
-                    val projectServerPath = "\$/${teamProject.name}"
-
                     val projectItems = mutableListOf<ProjectItem>()
 
-                    // 加载项目根目录下的子项
-                    val children = connectionService.getChildItems(context, projectServerPath)
-                    for (child in children) {
-                        if (child.isFolder) {
-                            val childItem = ProjectItem(child.serverPath, child.name)
-                            // 递归加载子文件夹（限制深度）
-                            loadChildren(childItem, connectionService, indicator, projectServerPath)
-                            projectItems.add(childItem)
-                        }
+                    val connectionService = ApplicationManager.getApplication().getService(TfsConnectionService::class.java)
+                    // 根节点 ServerItemType
+                    val itemSource = connectionService.getChildItems(context)
+                    labelProvider.setServerItemSource(itemSource)
+
+                    val root = ProjectItem(TypedServerItem.ROOT, labelProvider);
+                    projectItems.add(root)
+
+                    // 子节点 TypedServerItem
+                    CodeMarkerDispatch.dispatch(CODEMARKER_CHILD_NODES_FETCH_START)
+                    val children = itemSource.getChildren(root.node);
+
+                    CodeMarkerDispatch.dispatch(CODEMARKER_CHILD_NODES_FETCH_COMPLETE)
+
+                    if (children.size == 0) {
+                        return
                     }
+
+                    loadChildren(root, indicator, root.node.serverPath)
 
                     SwingUtilities.invokeLater {
                         projects.clear()
@@ -204,8 +208,10 @@ class ProjectSelectionStep(context: ImportProjectContext) :
                     }
                 } catch (e: Exception) {
                     SwingUtilities.invokeLater {
-                        statusLabel.text = TfsBundle.message("ProjectSelectionStep.error.loadingFailed", e.message ?: "")
-                        statusLabel.foreground = JBColor.RED
+                        Messages.showErrorDialog(
+                            TfsBundle.message("ProjectSelectionStep.error.loadingFailed", e.message ?: ""),
+                            TfsBundle.message("ProjectSelectionStep.title")
+                        )
                         refreshButton.isEnabled = true
                     }
                 }
@@ -215,24 +221,21 @@ class ProjectSelectionStep(context: ImportProjectContext) :
 
     private fun loadChildren(
         parent: ProjectItem,
-        connectionService: TfsConnectionService,
         indicator: ProgressIndicator,
         rootPath: String
     ) {
         if (indicator.isCanceled) return
 
         try {
-            val children = connectionService.getChildItems(context, parent.serverPath)
+            val children = labelProvider.getServerItemSource().getChildren(parent.node)
 
             for (child in children) {
-                if (child.isFolder) {
-                    val childItem = ProjectItem(child.serverPath, child.name)
-                    parent.addChild(childItem)
-                    // 限制递归深度（相对于根路径最多 4 层）
-                    val depth = child.serverPath.removePrefix(rootPath).count { it == '/' }
-                    if (depth < 4) {
-                        loadChildren(childItem, connectionService, indicator, rootPath)
-                    }
+                val childItem = ProjectItem(child, labelProvider)
+                parent.addChild(childItem)
+                // 限制递归深度（相对于根路径最多 4 层）
+                val depth = child.serverPath.removePrefix(rootPath).count { it == '/' }
+                if (depth < 1) {
+                    loadChildren(childItem, indicator, rootPath)
                 }
             }
         } catch (_: Exception) {
@@ -253,8 +256,8 @@ class ProjectSelectionStep(context: ImportProjectContext) :
         (projectTree.model as DefaultTreeModel).reload()
     }
 
-    private fun createTreeNode(item: ProjectItem): CheckedTreeNode {
-        val node = CheckedTreeNode(item)
+    private fun createTreeNode(item: ProjectItem): DefaultMutableTreeNode {
+        val node = DefaultMutableTreeNode(item)
 
         item.children?.forEach { child ->
             node.add(createTreeNode(child))
@@ -275,25 +278,11 @@ class ProjectSelectionStep(context: ImportProjectContext) :
     // ==================== 选择相关 ====================
 
     private fun getSelectedPaths(): List<String> {
-        val paths = mutableListOf<String>()
-        collectCheckedPaths(rootTreeNode, paths)
-        return paths
-    }
-
-    private fun collectCheckedPaths(node: CheckedTreeNode, paths: MutableList<String>) {
-        if (node.isChecked) {
-            val userObject = node.userObject
-            if (userObject is ProjectItem) {
-                paths.add(userObject.serverPath)
-            }
-        }
-
-        for (i in 0 until node.childCount) {
-            val child = node.getChildAt(i)
-            if (child is CheckedTreeNode) {
-                collectCheckedPaths(child, paths)
-            }
-        }
+        return projectTree.selectionPaths?.mapNotNull { path ->
+            val node = path.lastPathComponent as? DefaultMutableTreeNode
+            val item = node?.userObject as? ProjectItem
+            item?.node?.serverPath
+        } ?: emptyList()
     }
 
     // ==================== 步骤接口 ====================
@@ -314,8 +303,8 @@ class ProjectSelectionStep(context: ImportProjectContext) :
      * 项目项
      */
     private class ProjectItem(
-        val serverPath: String,
-        val name: String
+        val node: TypedServerItem,
+        val labelProvider: ServerItemLabelProvider
     ) {
         var children: MutableList<ProjectItem>? = null
 
@@ -326,6 +315,6 @@ class ProjectSelectionStep(context: ImportProjectContext) :
             children!!.add(child)
         }
 
-        override fun toString(): String = name
+        override fun toString(): String = labelProvider.getText(node)
     }
 }

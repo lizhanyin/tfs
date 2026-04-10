@@ -189,9 +189,9 @@ class CollectionSelectionStep(context: ImportProjectContext) :
         // 左侧：2x2 图标
         val iconUrl = javaClass.getResource(imageLocation)
         if (iconUrl != null) {
-            val icon = javax.swing.ImageIcon(iconUrl)
+            val icon = ImageIcon(iconUrl)
             val scaledIcon = icon.image.getScaledInstance(JBUI.scale(32), JBUI.scale(32), java.awt.Image.SCALE_SMOOTH)
-            val iconLabel = JLabel(javax.swing.ImageIcon(scaledIcon))
+            val iconLabel = JLabel(ImageIcon(scaledIcon))
             iconLabel.border = JBUI.Borders.emptyRight(4)
             infoPanel.add(iconLabel, BorderLayout.WEST)
         }

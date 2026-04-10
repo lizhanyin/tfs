@@ -3,7 +3,7 @@
 
 package com.github.lizhanyin.tfs.client.ui.framework;
 
-import org.eclipse.swt.SWT;
+import com.intellij.openapi.util.SystemInfo;
 
 import com.microsoft.tfs.util.BitField;
 import com.microsoft.tfs.util.Check;
@@ -98,7 +98,17 @@ public class WindowSystem extends BitField {
      */
     public synchronized final static String getCurrentWindowSystemString() {
         if (windowSystemString == null) {
-            windowSystemString = SWT.getPlatform();
+            if (SystemInfo.isWindows) {
+                windowSystemString = "win32"; //$NON-NLS-1$
+            } else if (SystemInfo.isMac) {
+                windowSystemString = "cocoa"; //$NON-NLS-1$
+            } else if (SystemInfo.isLinux) {
+                windowSystemString = "gtk"; //$NON-NLS-1$
+            } else if (SystemInfo.isUnix) {
+                windowSystemString = "gtk"; //$NON-NLS-1$
+            } else {
+                windowSystemString = "unknown"; //$NON-NLS-1$
+            }
         }
 
         return windowSystemString;

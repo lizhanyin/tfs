@@ -41,6 +41,8 @@ public class WizardServerSelectionPage extends ExtendedWizardPage{
         if (status.isOK()) {
             connection = connectTask.getConnection();
             updateCredentials(accountUri, connection.getCredentials());
+            // 设置
+            context.setCredentials(accountCredentials);
         } else {
             /* Connection cancelled */
             connection = null;

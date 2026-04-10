@@ -4,7 +4,7 @@
 package com.github.lizhanyin.tfs.client.framework.command;
 
 
-import com.github.lizhanyin.tfs.client.TFSCommonClientPlugin;
+import com.github.lizhanyin.tfs.TFSClientPlugin;
 import com.github.lizhanyin.tfs.client.framework.status.TeamExplorerStatus;
 import com.github.lizhanyin.tfs.client.framework.status.UncaughtCommandExceptionStatus;
 import com.github.lizhanyin.tfs.runtime.IStatus;
@@ -25,7 +25,7 @@ public class PlatformLogCommandFinishedCallback implements ICommandFinishedCallb
              */
             status = ((TeamExplorerStatus) status).toNormalStatus();
 
-            TFSCommonClientPlugin.log(status);
+            TFSClientPlugin.log(status);
         }
     }
 }

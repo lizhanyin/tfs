@@ -7,7 +7,7 @@ import java.text.MessageFormat;
 
 
 import com.github.lizhanyin.tfs.client.Messages;
-import com.github.lizhanyin.tfs.client.TFSCommonClientPlugin;
+import com.github.lizhanyin.tfs.TFSClientPlugin;
 import com.github.lizhanyin.tfs.client.framework.command.ExtendedStatus;
 import com.github.lizhanyin.tfs.client.framework.command.ICommand;
 import com.github.lizhanyin.tfs.client.framework.status.UncaughtCommandExceptionStatus;
@@ -57,6 +57,6 @@ public class DefaultExceptionHandler implements ICommandExceptionHandler {
                 command.getErrorDescription(),
                 details);
 
-        return new UncaughtCommandExceptionStatus(IStatus.ERROR, TFSCommonClientPlugin.PLUGIN_ID, 0, message, t);
+        return new UncaughtCommandExceptionStatus(IStatus.ERROR, TFSClientPlugin.PLUGIN_ID, 0, message, t);
     }
 }

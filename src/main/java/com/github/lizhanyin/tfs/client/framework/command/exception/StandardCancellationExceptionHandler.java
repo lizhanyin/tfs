@@ -4,7 +4,7 @@
 package com.github.lizhanyin.tfs.client.framework.command.exception;
 
 
-import com.github.lizhanyin.tfs.client.TFSCommonClientPlugin;
+import com.github.lizhanyin.tfs.TFSClientPlugin;
 import com.github.lizhanyin.tfs.runtime.IStatus;
 import com.github.lizhanyin.tfs.runtime.OperationCanceledException;
 import com.github.lizhanyin.tfs.runtime.Status;
@@ -25,7 +25,7 @@ public class StandardCancellationExceptionHandler implements ICommandExceptionHa
         if (t instanceof InterruptedException
             || t instanceof OperationCanceledException
             || t instanceof TransportRequestHandlerCanceledException) {
-            return new Status(IStatus.CANCEL, TFSCommonClientPlugin.PLUGIN_ID, 0, null, t);
+            return new Status(IStatus.CANCEL, TFSClientPlugin.PLUGIN_ID, 0, null, t);
         }
 
         return null;

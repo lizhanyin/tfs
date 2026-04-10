@@ -8,7 +8,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.github.lizhanyin.tfs.client.TFSCommonClientPlugin;
 import com.github.lizhanyin.tfs.client.commands.vc.QueryItemsExtendedCommand;
 import com.github.lizhanyin.tfs.client.framework.command.CommandExecutor;
 import com.github.lizhanyin.tfs.client.repository.TFSRepository;
@@ -191,8 +190,7 @@ public class TFSItemFactory {
 
     public static TFSItem[] getImplicitAdds(TFSRepository repository, final TFSFolder parent) {
         if (repository == null) {
-            repository =
-                TFSCommonClientPlugin.getDefault().getProductPlugin().getRepositoryManager().getDefaultRepository();
+            return new TFSItem[0];
         }
 
         final Set<String> implicitAddPathSet = new HashSet<>();

@@ -13,9 +13,9 @@ import java.awt.image.BufferedImage;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 
-import com.github.lizhanyin.tfs.client.TFSCommonClientPlugin;
+import com.github.lizhanyin.tfs.TFSClientPlugin;
 import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.util.ui.UIUtil;
+import com.intellij.util.ui.ImageUtil;
 
 import com.microsoft.tfs.util.Check;
 
@@ -41,7 +41,7 @@ public class ImageUtils {
             final int arrowHeight = fm.getHeight();
             final int arrowWidth = arrowHeight / 2;
 
-            final BufferedImage image = UIUtil.createImage(arrowWidth, arrowHeight, BufferedImage.TYPE_INT_ARGB);
+            final BufferedImage image = ImageUtil.createImage(arrowWidth, arrowHeight, BufferedImage.TYPE_INT_ARGB);
             final Graphics2D g = image.createGraphics();
 
             try {
@@ -68,14 +68,14 @@ public class ImageUtils {
              * Note: do not dispose this ImageHelper. Callers should dispose
              * the image manually.
              */
-            return new ImageHelper(TFSCommonClientPlugin.PLUGIN_ID).getImage("/images/common/drop_arrow.png"); //$NON-NLS-1$
+            return new ImageHelper(TFSClientPlugin.PLUGIN_ID).getImage("/images/common/drop_arrow.png"); //$NON-NLS-1$
         }
     }
 
     public static Icon createRectangular(final Color color, final int width, final int height) {
         Check.notNull(color, "color"); //$NON-NLS-1$
 
-        final BufferedImage image = UIUtil.createImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        final BufferedImage image = ImageUtil.createImage(width, height, BufferedImage.TYPE_INT_ARGB);
         final Graphics2D g = image.createGraphics();
 
         try {
@@ -90,7 +90,7 @@ public class ImageUtils {
 
     public static Icon grayScaleImage(final Icon icon, final int width, final int height) {
         // Convert Icon to BufferedImage
-        final BufferedImage original = UIUtil.createImage(
+        final BufferedImage original = ImageUtil.createImage(
             icon.getIconWidth(),
             icon.getIconHeight(),
             BufferedImage.TYPE_INT_ARGB);
@@ -102,7 +102,7 @@ public class ImageUtils {
         }
 
         // Scale
-        final BufferedImage scaled = UIUtil.createImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        final BufferedImage scaled = ImageUtil.createImage(width, height, BufferedImage.TYPE_INT_ARGB);
         g = scaled.createGraphics();
         try {
             g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);

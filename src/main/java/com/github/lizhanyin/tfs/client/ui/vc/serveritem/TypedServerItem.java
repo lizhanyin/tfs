@@ -5,9 +5,6 @@ package com.github.lizhanyin.tfs.client.ui.vc.serveritem;
 
 import java.text.MessageFormat;
 
-import com.github.lizhanyin.tfs.client.repository.TFSRepository;
-import com.github.lizhanyin.tfs.client.ui.vc.tfsitem.TFSFolder;
-import com.github.lizhanyin.tfs.client.ui.vc.tfsitem.TFSItem;
 import com.microsoft.tfs.core.clients.versioncontrol.path.ServerPath;
 import com.microsoft.tfs.util.Check;
 

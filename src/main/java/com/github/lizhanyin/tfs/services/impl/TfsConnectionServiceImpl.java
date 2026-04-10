@@ -3,7 +3,9 @@ package com.github.lizhanyin.tfs.services.impl;
 import com.github.lizhanyin.tfs.client.catalog.CrossCollectionProjectInfo;
 import com.github.lizhanyin.tfs.client.ui.controls.workspaces.WorkspaceData;
 import com.github.lizhanyin.tfs.client.ui.tasks.ConnectToConfigurationServerTask;
+import com.github.lizhanyin.tfs.client.ui.vc.serveritem.VersionedItemSource;
 import com.github.lizhanyin.tfs.client.ui.wizard.WizardCollectionSelectionPage;
+import com.github.lizhanyin.tfs.client.ui.wizard.WizardProjectSelectionPage;
 import com.github.lizhanyin.tfs.client.ui.wizard.WizardServerSelectionPage;
 import com.github.lizhanyin.tfs.client.ui.wizard.WizardWorkspacePage;
 import com.github.lizhanyin.tfs.runtime.IStatus;
@@ -14,10 +16,8 @@ import com.github.lizhanyin.tfs.wizard.ImportProjectContext;
 import com.intellij.openapi.diagnostic.Logger;
 import com.microsoft.tfs.core.TFSConnection;
 import com.microsoft.tfs.core.TFSTeamProjectCollection;
+import com.microsoft.tfs.core.clients.commonstructure.ProjectInfo;
 import com.microsoft.tfs.core.clients.versioncontrol.VersionControlClient;
-import com.microsoft.tfs.core.clients.versioncontrol.WorkspaceLocation;
-import com.microsoft.tfs.core.clients.versioncontrol.WorkspaceOptions;
-import com.microsoft.tfs.core.clients.versioncontrol.WorkspacePermissionProfile;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Item;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
@@ -133,6 +133,13 @@ public class TfsConnectionServiceImpl implements TfsConnectionService {
             closeConnection(tpc);
         }
     }
+
+    @Override
+    @NotNull
+    public VersionedItemSource getChildItems(@NotNull ImportProjectContext context) throws Exception {
+        return new WizardProjectSelectionPage(context).queryItems();
+    }
+
 
     private List<ProjectItemInfo> doGetChildItems(TFSTeamProjectCollection tpc, String parentPath) {
         VersionControlClient vcClient = tpc.getVersionControlClient();

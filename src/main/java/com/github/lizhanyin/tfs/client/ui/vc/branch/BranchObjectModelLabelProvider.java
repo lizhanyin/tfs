@@ -3,7 +3,7 @@
 
 package com.github.lizhanyin.tfs.client.ui.vc.branch;
 
-import com.github.lizhanyin.tfs.client.TFSCommonClientPlugin;
+import com.github.lizhanyin.tfs.TFSClientPlugin;
 import com.github.lizhanyin.tfs.client.ui.framework.helper.ImageHelper;
 
 import com.microsoft.tfs.core.clients.versioncontrol.path.ServerPath;
@@ -23,7 +23,7 @@ public class BranchObjectModelLabelProvider {
 
     public Icon getImage(final Object element) {
         if (element instanceof BranchObject) {
-            return new ImageHelper(TFSCommonClientPlugin.PLUGIN_ID).getImage("images/vc/folder_branch.gif"); //$NON-NLS-1$
+            return new ImageHelper(TFSClientPlugin.PLUGIN_ID).getImage("images/vc/folder_branch.gif"); //$NON-NLS-1$
         }
         return null;
     }

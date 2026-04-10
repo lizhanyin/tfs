@@ -4,14 +4,16 @@ import com.github.lizhanyin.tfs.TfsBundle
 import com.github.lizhanyin.tfs.client.catalog.CrossCollectionProjectInfo
 import com.github.lizhanyin.tfs.client.ui.framework.UIContext
 import com.microsoft.tfs.core.TFSConnection
+import com.microsoft.tfs.core.clients.versioncontrol.SourceControlCapabilityFlags
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace
+import com.microsoft.tfs.core.httpclient.Credentials
 import java.net.URI
 
 /**
  * 导入项目向导上下文
  * 用于在向导步骤之间共享数据
  */
-class ImportProjectContext {
+class ImportProjectContext() {
 
     /**
      * 向导控制器接口，供步骤控制向导的进度条等
@@ -21,16 +23,23 @@ class ImportProjectContext {
         fun hideProgress()
     }
 
+    // 模式标记
+    var sourceControlCapabilityFlags: SourceControlCapabilityFlags? = null
+
     // UI 上下文（类似 SWT Shell）
     var uiContext: UIContext = UIContext(null)
     var wizardController: WizardController? = null
-    var tfsConn : TFSConnection? = null
+
     // 服务器信息
     var serverUrl: String? = null
     var username: String? = null
     var password: String? = null
     var domain: String? = null
     var authType: AuthType = AuthType.BASIC
+    // 权限对象
+    var credentials: Credentials? = null
+    // 团队项目连接器
+    var tfsConn : TFSConnection? = null
 
     // 团队项目
     var collection: CrossCollectionProjectInfo? = null

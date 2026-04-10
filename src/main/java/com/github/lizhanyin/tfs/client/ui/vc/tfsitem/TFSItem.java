@@ -5,7 +5,6 @@ package com.github.lizhanyin.tfs.client.ui.vc.tfsitem;
 
 import java.text.MessageFormat;
 
-import com.github.lizhanyin.tfs.client.TFSCommonClientPlugin;
 import com.github.lizhanyin.tfs.client.repository.TFSRepository;
 import com.github.lizhanyin.tfs.client.repository.cache.pendingchange.PendingChangeCache;
 import com.github.lizhanyin.tfs.client.ui.item.ServerItemPath;
@@ -63,7 +62,7 @@ public class TFSItem implements PathElement {
             return repository;
         }
 
-        return TFSCommonClientPlugin.getDefault().getProductPlugin().getRepositoryManager().getDefaultRepository();
+        return null;
     }
 
     public int getDeletionID() {

@@ -7,6 +7,7 @@ import com.intellij.util.xmlb.XmlSerializerUtil
 /**
  * TFS 插件配置状态
  */
+@Service(Service.Level.PROJECT)
 @State(
     name = "TfsSettings",
     storages = [Storage("tfs.xml")]

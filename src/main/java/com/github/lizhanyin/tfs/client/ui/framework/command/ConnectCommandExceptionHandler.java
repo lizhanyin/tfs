@@ -4,7 +4,7 @@
 package com.github.lizhanyin.tfs.client.ui.framework.command;
 
 
-import com.github.lizhanyin.tfs.client.TFSCommonClientPlugin;
+import com.github.lizhanyin.tfs.TFSClientPlugin;
 import com.github.lizhanyin.tfs.client.framework.command.exception.ICommandExceptionHandler;
 import com.github.lizhanyin.tfs.runtime.IStatus;
 import com.github.lizhanyin.tfs.runtime.Status;
@@ -19,7 +19,7 @@ public final class ConnectCommandExceptionHandler implements ICommandExceptionHa
     @Override
     public IStatus onException(final Throwable t) {
         if (t instanceof NTLMVersionException) {
-            return new Status(IStatus.ERROR, TFSCommonClientPlugin.PLUGIN_ID, 0, t.getLocalizedMessage(), null);
+            return new Status(IStatus.ERROR, TFSClientPlugin.PLUGIN_ID, 0, t.getLocalizedMessage(), null);
         }
 
         return null;

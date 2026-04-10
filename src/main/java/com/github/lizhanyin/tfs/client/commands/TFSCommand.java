@@ -6,7 +6,7 @@ package com.github.lizhanyin.tfs.client.commands;
 import com.intellij.openapi.progress.ProgressIndicator;
 
 import com.github.lizhanyin.tfs.runtime.IStatus;
-import com.github.lizhanyin.tfs.client.TFSCommonClientPlugin;
+import com.github.lizhanyin.tfs.TFSClientPlugin;
 import com.github.lizhanyin.tfs.client.framework.command.Command;
 import com.github.lizhanyin.tfs.client.framework.command.CommandInitializationRunnable;
 import com.github.lizhanyin.tfs.client.framework.command.exception.ICommandExceptionHandler;
@@ -34,7 +34,7 @@ public abstract class TFSCommand extends Command {
         public IStatus onException(final Throwable t) {
             if (t instanceof TECoreException) {
                 final String exceptionMessage = getErrorMessage(t.getLocalizedMessage());
-                return new TeamExplorerStatus(IStatus.ERROR, TFSCommonClientPlugin.PLUGIN_ID, 0, exceptionMessage, t);
+                return new TeamExplorerStatus(IStatus.ERROR, TFSClientPlugin.PLUGIN_ID, 0, exceptionMessage, t);
             }
 
             return null;

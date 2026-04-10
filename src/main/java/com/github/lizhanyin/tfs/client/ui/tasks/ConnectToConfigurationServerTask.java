@@ -37,7 +37,7 @@ public class ConnectToConfigurationServerTask extends ConnectTask {
      * Connects to the given server URI.
      *
      * @param project
-     *        a valid {@link Project}
+     *        a valid {@link UIContext}
      * @param serverURI
      *        the server URI to connect to
      * @param credentials

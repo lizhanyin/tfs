@@ -5,7 +5,7 @@ package com.github.lizhanyin.tfs.client.framework.command;
 
 import java.text.MessageFormat;
 
-import com.github.lizhanyin.tfs.client.TFSCommonClientPlugin;
+import com.github.lizhanyin.tfs.TFSClientPlugin;
 import com.github.lizhanyin.tfs.client.ui.framework.command.RunnableCommandAdapter;
 import com.github.lizhanyin.tfs.runtime.IStatus;
 import com.github.lizhanyin.tfs.runtime.Status;
@@ -94,7 +94,7 @@ public class ThreadCommandExecutor extends CommandExecutor {
                 new ExtensionPointAsyncObjectWaiter().joinThread(thread);
             } catch (final InterruptedException e) {
                 synchronized (statusLock) {
-                    status = new Status(IStatus.ERROR, TFSCommonClientPlugin.PLUGIN_ID, 0, null, e);
+                    status = new Status(IStatus.ERROR, TFSClientPlugin.PLUGIN_ID, 0, null, e);
                 }
             }
         }

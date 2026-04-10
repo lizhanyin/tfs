@@ -35,8 +35,6 @@
                             serviceImplementation="com.github.lizhanyin.tfs.services.impl.TfsConnectionServiceImpl"/>
 
         <!-- 项目服务 -->
-        <projectService serviceImplementation="com.github.lizhanyin.tfs.services.TfsService"/>
-        <projectService serviceImplementation="com.github.lizhanyin.tfs.settings.TfsSettings"/>
 
         <!-- 启动活动 -->
         <postStartupActivity implementation="com.github.lizhanyin.tfs.startup.TfsStartupActivity"/>

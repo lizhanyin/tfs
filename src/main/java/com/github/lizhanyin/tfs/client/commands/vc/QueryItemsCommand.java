@@ -7,7 +7,7 @@ import java.text.MessageFormat;
 
 
 import com.github.lizhanyin.tfs.client.Messages;
-import com.github.lizhanyin.tfs.client.TFSCommonClientPlugin;
+import com.github.lizhanyin.tfs.TFSClientPlugin;
 import com.github.lizhanyin.tfs.client.commands.TFSCommand;
 import com.github.lizhanyin.tfs.client.framework.command.exception.ICommandExceptionHandler;
 import com.github.lizhanyin.tfs.client.repository.TFSRepository;
@@ -133,7 +133,7 @@ public class QueryItemsCommand extends TFSCommand {
                     messageFormat,
                     DateHelper.getDefaultDateTimeFormat().format(((DateVersionSpec) versionSpec).getDate().getTime()));
 
-                return new Status(IStatus.ERROR, TFSCommonClientPlugin.PLUGIN_ID, 14021, message, null);
+                return new Status(IStatus.ERROR, TFSClientPlugin.PLUGIN_ID, 14021, message, null);
             }
 
             return null;

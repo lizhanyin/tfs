@@ -1,5 +1,6 @@
 package com.github.lizhanyin.tfs.startup
 
+import com.github.lizhanyin.tfs.TFSClientPlugin
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
@@ -17,5 +18,8 @@ class TfsStartupActivity : ProjectActivity {
 
         // 初始化 TFS 本地库
         TfsNativeLibraryInitializer.init()
+
+        // 初始化插件
+        TFSClientPlugin.getDefault(project).start()
     }
 }
