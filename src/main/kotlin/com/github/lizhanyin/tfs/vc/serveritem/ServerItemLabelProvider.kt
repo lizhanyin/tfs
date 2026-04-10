@@ -20,8 +20,6 @@ class ServerItemLabelProvider : FolderFileLabelProvider() {
         this.serverItemSource = serverItemSource
     }
 
-    fun getServerItemSource(): ServerItemSource {return serverItemSource!!}
-
     fun getText(element: Any): String {
         val node = element as TypedServerItem
 

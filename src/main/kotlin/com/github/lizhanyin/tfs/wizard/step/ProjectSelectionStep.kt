@@ -3,6 +3,8 @@ package com.github.lizhanyin.tfs.wizard.step
 import com.github.lizhanyin.tfs.TfsBundle
 import com.github.lizhanyin.tfs.client.codemarker.CodeMarker
 import com.github.lizhanyin.tfs.client.codemarker.CodeMarkerDispatch
+import com.github.lizhanyin.tfs.client.ui.vc.serveritem.ServerItemSource
+import com.github.lizhanyin.tfs.client.ui.vc.serveritem.ServerItemType
 import com.github.lizhanyin.tfs.client.ui.vc.serveritem.TypedServerItem
 import com.github.lizhanyin.tfs.services.TfsConnectionService
 import com.github.lizhanyin.tfs.vc.serveritem.ServerItemLabelProvider
@@ -11,7 +13,6 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
-import com.intellij.icons.AllIcons
 import com.intellij.openapi.ui.Messages
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBCheckBox
@@ -39,14 +40,14 @@ import javax.swing.tree.TreeSelectionModel
  * |    从 Team Foundation Server 导入项目    |
  * |----------------------------------------|
  * | 导入项目:                                |
- * | [tree] (ip\集合名称）                    |
+ * | [ tree] (ip\集合名称）                    |
  * |    root  (项目名）                       |
  * |      文件夹1                            |
  * |      文件夹2                            |
- * | [label] (已选择 {0} 个项目)              |
- * | [checkbox] 对选定项目中的文件执行强制获取  |
+ * | [ label] (已选择 {0} 个项目)              |
+ * | [ checkbox] 对选定项目中的文件执行强制获取  |
  * |----------------------------------------|
- * | [上一步] [下一步]  [完成](禁用) [放弃]    |
+ * | [ 上一步] [ 下一步]  [完成](禁用) [ 放弃]    |
  * ------------------------------------------
  */
 class ProjectSelectionStep(context: ImportProjectContext) :
@@ -68,6 +69,8 @@ class ProjectSelectionStep(context: ImportProjectContext) :
     private lateinit var refreshButton: JButton
 
     private var labelProvider: ServerItemLabelProvider = ServerItemLabelProvider()
+    private var contentProvider: ContentProvider = ContentProvider()
+
 
     private val projects = mutableListOf<ProjectItem>()
 
@@ -176,12 +179,13 @@ class ProjectSelectionStep(context: ImportProjectContext) :
                     val itemSource = connectionService.getChildItems(context)
                     labelProvider.setServerItemSource(itemSource)
 
-                    val root = ProjectItem(TypedServerItem.ROOT, labelProvider);
-                    projectItems.add(root)
+                    val rootNode = contentProvider.getElements(itemSource)
+                    val parent = ProjectItem(rootNode[0], labelProvider);
+                    projectItems.add(parent)
 
                     // 子节点 TypedServerItem
                     CodeMarkerDispatch.dispatch(CODEMARKER_CHILD_NODES_FETCH_START)
-                    val children = itemSource.getChildren(root.node);
+                    val children = itemSource.getChildren(parent.node);
 
                     CodeMarkerDispatch.dispatch(CODEMARKER_CHILD_NODES_FETCH_COMPLETE)
 
@@ -189,7 +193,7 @@ class ProjectSelectionStep(context: ImportProjectContext) :
                         return
                     }
 
-                    loadChildren(root, indicator, root.node.serverPath)
+                    loadChildren(parent, indicator, parent.node.serverPath)
 
                     SwingUtilities.invokeLater {
                         projects.clear()
@@ -227,15 +231,18 @@ class ProjectSelectionStep(context: ImportProjectContext) :
         if (indicator.isCanceled) return
 
         try {
-            val children = labelProvider.getServerItemSource().getChildren(parent.node)
-
-            for (child in children) {
-                val childItem = ProjectItem(child, labelProvider)
-                parent.addChild(childItem)
-                // 限制递归深度（相对于根路径最多 4 层）
-                val depth = child.serverPath.removePrefix(rootPath).count { it == '/' }
-                if (depth < 1) {
-                    loadChildren(childItem, indicator, rootPath)
+            val children = contentProvider.getChildren(parent.node)
+            if (children != null) {
+                for (child in children) {
+                    if (contentProvider.hasChildren(child)){
+                        val childItem = ProjectItem(child, labelProvider)
+                        parent.addChild(childItem)
+                        // 限制递归深度（相对于根路径最多 1 层）
+                        val depth = child.serverPath.removePrefix(rootPath).count { it == '/' }
+                        if (depth < 1) {
+                            loadChildren(childItem, indicator, rootPath)
+                        }
+                    }
                 }
             }
         } catch (_: Exception) {
@@ -316,5 +323,56 @@ class ProjectSelectionStep(context: ImportProjectContext) :
         }
 
         override fun toString(): String = labelProvider.getText(node)
+    }
+
+    private class ContentProvider {
+        private var source: ServerItemSource? = null
+        var visibleTypeFlags: Int = ServerItemType.ROOT.flag or
+                ServerItemType.TEAM_PROJECT.flag or
+                ServerItemType.FOLDER.flag
+
+        fun getChildren(parentElement: TypedServerItem): Array<TypedServerItem>? {
+            CodeMarkerDispatch.dispatch(CODEMARKER_CHILD_NODES_FETCH_START)
+
+            val parent = parentElement as TypedServerItem
+            val children = source!!.getChildren(parent)
+
+            CodeMarkerDispatch.dispatch(CODEMARKER_CHILD_NODES_FETCH_COMPLETE)
+
+            if (children.isEmpty()) {
+                return null
+            }
+
+            return children
+        }
+
+        fun hasChildren(element: TypedServerItem): Boolean {
+            val item = element as TypedServerItem
+
+            if (item.type == ServerItemType.FILE) {
+                return false
+            }
+
+            if (item.type == ServerItemType.GIT_REPOSITORY) {
+                return visibleTypeFlags and ServerItemType.GIT_BRANCH.flag != 0
+            }
+
+            return true
+        }
+
+        fun getElements(inputElement: ServerItemSource?): Array<TypedServerItem> {
+            source = inputElement as ServerItemSource?
+
+            return if (source == null) {
+                emptyArray()
+            } else {
+                arrayOf(TypedServerItem.ROOT)
+            }
+        }
+
+        fun getParent(element: TypedServerItem): Any {
+            val node = element as TypedServerItem
+            return node.parent
+        }
     }
 }
