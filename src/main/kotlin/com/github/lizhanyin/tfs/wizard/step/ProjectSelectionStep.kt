@@ -22,13 +22,18 @@ import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.JBUI
 import java.awt.BorderLayout
 import java.awt.Dimension
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
 import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
+import javax.swing.event.TreeExpansionEvent
+import javax.swing.event.TreeExpansionListener
 import javax.swing.event.TreeSelectionListener
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
+import javax.swing.tree.TreePath
 import javax.swing.tree.TreeSelectionModel
 
 /**
@@ -64,13 +69,15 @@ class ProjectSelectionStep(context: ImportProjectContext) :
     private lateinit var projectTree: Tree
     private lateinit var rootTreeNode: DefaultMutableTreeNode
     private lateinit var selectedCountLabel: JBLabel
-    private lateinit var forceGetCheckbox: JBCheckBox
     private lateinit var statusLabel: JBLabel
     private lateinit var refreshButton: JButton
 
+    // 参数
+    private lateinit var forceGetCheckbox: JBCheckBox
+
+    //
     private var labelProvider: ServerItemLabelProvider = ServerItemLabelProvider()
     private var contentProvider: ContentProvider = ContentProvider()
-
 
     private val projects = mutableListOf<ProjectItem>()
 
@@ -151,6 +158,31 @@ class ProjectSelectionStep(context: ImportProjectContext) :
         }
 
         projectTree.addTreeSelectionListener(TreeSelectionListener { updateSelectedCount() })
+
+        // 展开事件：懒加载子节点
+        projectTree.addTreeExpansionListener(object : TreeExpansionListener {
+            override fun treeExpanded(event: TreeExpansionEvent) {
+                val treeNode = event.path.lastPathComponent as? DefaultMutableTreeNode ?: return
+                val projectItem = treeNode.userObject as? ProjectItem ?: return
+                if (!projectItem.loaded) {
+                    loadChildrenAsync(treeNode, projectItem, event.path)
+                }
+            }
+            override fun treeCollapsed(event: TreeExpansionEvent) {}
+        })
+
+        // 双击事件：展开/加载子节点
+        projectTree.addMouseListener(object : MouseAdapter() {
+            override fun mouseClicked(e: MouseEvent) {
+                if (e.clickCount != 2) return
+                val path = projectTree.getPathForLocation(e.x, e.y) ?: return
+                val treeNode = path.lastPathComponent as? DefaultMutableTreeNode ?: return
+                val projectItem = treeNode.userObject as? ProjectItem ?: return
+                if (!projectItem.loaded && projectItem.node.type != ServerItemType.FILE) {
+                    loadChildrenAsync(treeNode, projectItem, path)
+                }
+            }
+        })
     }
 
     // ==================== 数据加载 ====================
@@ -172,28 +204,28 @@ class ProjectSelectionStep(context: ImportProjectContext) :
                 indicator.isIndeterminate = true
 
                 try {
-                    val projectItems = mutableListOf<ProjectItem>()
-
                     val connectionService = ApplicationManager.getApplication().getService(TfsConnectionService::class.java)
-                    // 根节点 ServerItemType
                     val itemSource = connectionService.getChildItems(context)
                     labelProvider.setServerItemSource(itemSource)
 
-                    val rootNode = contentProvider.getElements(itemSource)
-                    val parent = ProjectItem(rootNode[0], labelProvider);
-                    projectItems.add(parent)
+                    val rootNodes = contentProvider.getElements(itemSource)
+                    if (rootNodes.isEmpty()) return
 
-                    // 子节点 TypedServerItem
+                    val rootItem = ProjectItem(rootNodes[0], labelProvider)
+
+                    // 仅加载根节点的直接子项（团队项目），不递归
                     CodeMarkerDispatch.dispatch(CODEMARKER_CHILD_NODES_FETCH_START)
-                    val children = itemSource.getChildren(parent.node);
-
+                    val rootChildren = itemSource.getChildren(rootItem.node)
                     CodeMarkerDispatch.dispatch(CODEMARKER_CHILD_NODES_FETCH_COMPLETE)
 
-                    if (children.size == 0) {
-                        return
+                    for (child in rootChildren) {
+                        if (contentProvider.hasChildren(child)) {
+                            rootItem.addChild(ProjectItem(child, labelProvider))
+                        }
                     }
+                    rootItem.loaded = true
 
-                    loadChildren(parent, indicator, parent.node.serverPath)
+                    val projectItems = mutableListOf(rootItem)
 
                     SwingUtilities.invokeLater {
                         projects.clear()
@@ -223,31 +255,53 @@ class ProjectSelectionStep(context: ImportProjectContext) :
         })
     }
 
-    private fun loadChildren(
-        parent: ProjectItem,
-        indicator: ProgressIndicator,
-        rootPath: String
-    ) {
-        if (indicator.isCanceled) return
+    /**
+     * 异步加载子节点（懒加载）
+     */
+    private fun loadChildrenAsync(treeNode: DefaultMutableTreeNode, projectItem: ProjectItem, treePath: TreePath) {
+        ProgressManager.getInstance().run(object : Task.Backgroundable(null, TfsBundle.message("ProjectSelectionStep.progress.loading"), true) {
+            override fun run(indicator: ProgressIndicator) {
+                indicator.text = TfsBundle.message("ProjectSelectionStep.progress.fetching")
+                indicator.isIndeterminate = true
 
-        try {
-            val children = contentProvider.getChildren(parent.node)
-            if (children != null) {
-                for (child in children) {
-                    if (contentProvider.hasChildren(child)){
-                        val childItem = ProjectItem(child, labelProvider)
-                        parent.addChild(childItem)
-                        // 限制递归深度（相对于根路径最多 1 层）
-                        val depth = child.serverPath.removePrefix(rootPath).count { it == '/' }
-                        if (depth < 1) {
-                            loadChildren(childItem, indicator, rootPath)
+                try {
+                    CodeMarkerDispatch.dispatch(CODEMARKER_CHILD_NODES_FETCH_START)
+                    val children = contentProvider.getChildren(projectItem.node)
+                    CodeMarkerDispatch.dispatch(CODEMARKER_CHILD_NODES_FETCH_COMPLETE)
+
+                    if (children.isNullOrEmpty()) {
+                        projectItem.loaded = true
+                        SwingUtilities.invokeLater {
+                            treeNode.removeAllChildren()
+                            (projectTree.model as DefaultTreeModel).nodeStructureChanged(treeNode)
                         }
+                        return
+                    }
+
+                    val childItems = children
+                        .filter { contentProvider.hasChildren(it) }
+                        .map { ProjectItem(it, labelProvider) }
+                        .toMutableList()
+
+                    SwingUtilities.invokeLater {
+                        treeNode.removeAllChildren()
+                        for (childItem in childItems) {
+                            treeNode.add(createTreeNode(childItem))
+                        }
+                        projectItem.children = childItems
+                        projectItem.loaded = true
+                        (projectTree.model as DefaultTreeModel).nodeStructureChanged(treeNode)
+                    }
+                } catch (e: Exception) {
+                    SwingUtilities.invokeLater {
+                        Messages.showErrorDialog(
+                            TfsBundle.message("ProjectSelectionStep.error.loadingFailed", e.message ?: ""),
+                            TfsBundle.message("ProjectSelectionStep.title")
+                        )
                     }
                 }
             }
-        } catch (_: Exception) {
-            // 忽略单个文件夹加载失败
-        }
+        })
     }
 
     // ==================== 树操作 ====================
@@ -266,8 +320,14 @@ class ProjectSelectionStep(context: ImportProjectContext) :
     private fun createTreeNode(item: ProjectItem): DefaultMutableTreeNode {
         val node = DefaultMutableTreeNode(item)
 
-        item.children?.forEach { child ->
-            node.add(createTreeNode(child))
+        if (item.loaded) {
+            // 已加载：用实际子节点填充
+            item.children?.forEach { child ->
+                node.add(createTreeNode(child))
+            }
+        } else if (item.node.type != ServerItemType.FILE) {
+            // 未加载的文件夹：添加占位节点以显示展开箭头
+            node.add(DefaultMutableTreeNode())
         }
 
         return node
@@ -314,6 +374,7 @@ class ProjectSelectionStep(context: ImportProjectContext) :
         val labelProvider: ServerItemLabelProvider
     ) {
         var children: MutableList<ProjectItem>? = null
+        var loaded: Boolean = false
 
         fun addChild(child: ProjectItem) {
             if (children == null) {
